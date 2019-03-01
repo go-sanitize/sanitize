@@ -15,7 +15,9 @@ d := Dog{
     Breed: nil,
 }
 
-sanitize.Struct(&d)
+s := sanitizer.New()
+s.Sanitize(&d)
 
-fmt.Printf("Name: %s, Breed: %s", d.Name, d.Breed) // Name: borky, Breed: unknown
+fmt.Printf("Name: %s, Breed: %s", d.Name, d.Breed)
+// Name: borky, Breed: unknown
 ```

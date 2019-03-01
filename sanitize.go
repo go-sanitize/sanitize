@@ -2,36 +2,41 @@ package sanitize
 
 import (
 	"fmt"
-	"reflect"
-	"strconv"
-	"strings"
+	//"reflect"
+	//"strconv"
+	//"strings"
 )
 
-// TagName is the name of the tag that must be present on the string fields of
-// the structs to be sanitized. Defaults to "san".
-var TagName = "san"
+// DefaultTagName intance is the name of the tag that must be present on the string
+// fields of the structs to be sanitized. Defaults to "san".
+const DefaultTagName = "san"
 
-// SetTagName overrides the default tag name ("san") used by the library.
-func SetTagName(n string) {
-	TagName = n
+// Sanitizer intance
+type Sanitizer struct {
+	tagName string
 }
 
-type fieldSanFn = func(structValue reflect.Value, idx int) error
-
-var fieldSanFns = map[reflect.Kind]fieldSanFn{
-	reflect.String:  sanitizeStrField,
-	reflect.Int64:   sanitizeInt64Field,
-	reflect.Float64: sanitizeFloat64Field,
-	reflect.Bool:    sanitizeBoolField,
+// New sanitizer instance
+func New(options ...Option) (*Sanitizer, error) {
+	s := &Sanitizer{
+		tagName: DefaultTagName,
+	}
+	for _, o := range options {
+		switch o.id() {
+		case optionTagNameID:
+			v := o.value()
+			if len(v) < 1 || len(v) > 10 {
+				return nil, fmt.Errorf("tag name %q must be between 1 and 10 characters", v)
+			}
+			s.tagName = v
+		default:
+			return nil, fmt.Errorf("tag name %q is not valid", o.value())
+		}
+	}
+	return s, nil
 }
 
-func parseInt64(str string) (int64, error) {
-	return strconv.ParseInt(str, 10, 64)
-}
-
-func parseFloat64(str string) (float64, error) {
-	return strconv.ParseFloat(str, 64)
-}
+/*
 
 // Struct performs sanitization on all fields of any struct, so long
 // as the sanitization tag ("san" by default) has been defined on the string
@@ -50,6 +55,23 @@ func Struct(s interface{}) error {
 	// used to mutate underlying data and Type is used to get the name of the
 	// field.
 	return sanitizeRec(reflect.ValueOf(s).Elem())
+}
+
+type fieldSanFn = func(structValue reflect.Value, idx int) error
+
+var fieldSanFns = map[reflect.Kind]fieldSanFn{
+	reflect.String:  sanitizeStrField,
+	reflect.Int64:   sanitizeInt64Field,
+	reflect.Float64: sanitizeFloat64Field,
+	reflect.Bool:    sanitizeBoolField,
+}
+
+func parseInt64(str string) (int64, error) {
+	return strconv.ParseInt(str, 10, 64)
+}
+
+func parseFloat64(str string) (float64, error) {
+	return strconv.ParseFloat(str, 64)
 }
 
 // Called during recursion, since during recursion we need reflect.Value
@@ -102,7 +124,7 @@ func sanitizeStrField(structValue reflect.Value, idx int) error {
 	var fieldValue = structValue.Field(idx)
 	isPtr := fieldValue.Kind() == reflect.Ptr
 
-	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(TagName)
+	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(tagName)
 
 	if !ok {
 		// No tag so no sanitization to do
@@ -174,7 +196,7 @@ func sanitizeInt64Field(structValue reflect.Value, idx int) error {
 	var fieldValue = structValue.Field(idx)
 	isPtr := fieldValue.Kind() == reflect.Ptr
 
-	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(TagName)
+	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(tagName)
 
 	if !ok {
 		// No tag so no sanitization to do
@@ -279,7 +301,7 @@ func sanitizeFloat64Field(structValue reflect.Value, idx int) error {
 	var fieldValue = structValue.Field(idx)
 	isPtr := fieldValue.Kind() == reflect.Ptr
 
-	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(TagName)
+	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(tagName)
 
 	if !ok {
 		// No tag so no sanitization to do
@@ -384,7 +406,7 @@ func sanitizeBoolField(structValue reflect.Value, idx int) error {
 	var fieldValue = structValue.Field(idx)
 	isPtr := fieldValue.Kind() == reflect.Ptr
 
-	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(TagName)
+	tStr, ok := structValue.Type().Field(idx).Tag.Lookup(tagName)
 
 	if !ok {
 		// No tag so no sanitization to do
@@ -420,3 +442,4 @@ func sanitizeBoolField(structValue reflect.Value, idx int) error {
 
 	return nil
 }
+*/
