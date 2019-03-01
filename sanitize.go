@@ -69,7 +69,6 @@ func sanitizeRec(v reflect.Value) error {
 
 		var fieldValue reflect.Value
 		fieldValue = v.Field(i)
-		fmt.Printf("Field value kind: '%+v'\n", fieldValue.Kind())
 
 		if fieldValue.Kind() == reflect.Ptr {
 			fieldValue = fieldValue.Elem()
