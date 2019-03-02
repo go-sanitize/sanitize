@@ -5,7 +5,6 @@ package sanitize
 import (
 	"fmt"
 	"reflect"
-	//"strings"
 )
 
 // DefaultTagName intance is the name of the tag that must be present on the string
