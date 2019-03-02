@@ -1,3 +1,5 @@
+// Package sanitize provides an easy way to clean fields in structs: trimming, applying maximum
+// string lengths, minimum numeric values, default values, and so on
 package sanitize
 
 import (
