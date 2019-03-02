@@ -41,7 +41,7 @@ func Test_Sanitize_Simple(t *testing.T) {
 
 	unknown := "unknown"
 	expected := Dog{
-		Name:  "Borky",
+		Name:  "borky",
 		Breed: &unknown,
 	}
 

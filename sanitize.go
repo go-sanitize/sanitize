@@ -56,51 +56,45 @@ func (s *Sanitizer) Sanitize(o interface{}) error {
 
 type fieldSanFn = func(s Sanitizer, structValue reflect.Value, idx int) error
 
-var fieldSanFns = map[reflect.Kind]fieldSanFn{
-	reflect.String:  sanitizeStrField,
-	reflect.Int64:   sanitizeInt64Field,
-	reflect.Float64: sanitizeFloat64Field,
-	reflect.Bool:    sanitizeBoolField,
+var fieldSanFns = map[string]fieldSanFn{
+	"string":   sanitizeStrField,
+	"*string":  sanitizeStrField,
+	"int64":    sanitizeInt64Field,
+	"*int64":   sanitizeInt64Field,
+	"float64":  sanitizeFloat64Field,
+	"*float64": sanitizeFloat64Field,
+	"bool":     sanitizeBoolField,
+	"*bool":    sanitizeBoolField,
 }
 
 // Called during recursion, since during recursion we need reflect.Value
 // not interface{}.
 func (s Sanitizer) sanitizeRec(v reflect.Value) error {
-	var structValue reflect.Value
-	isPtr := v.Kind() == reflect.Ptr
-	if isPtr {
-		structValue = v.Elem()
-	} else {
-		structValue = v
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
 
 	// Loop through fields of struct. If a struct is encountered, recurse. If a
 	// string is encountered, transform it. Else, skip.
-	for i := 0; i < structValue.Type().NumField(); i++ {
+	for i := 0; i < v.Type().NumField(); i++ {
+		field := v.Field(i)
+		fkind := field.Kind()
 
-		var fieldValue reflect.Value
-		fieldValue = v.Field(i)
-
-		if fieldValue.Kind() == reflect.Ptr {
-			fieldValue = fieldValue.Elem()
-		}
-
-		if fieldValue.Kind() == reflect.Struct {
-			err := s.sanitizeRec(fieldValue)
-			if err != nil {
+		// If the field is a struct, sanitize it recursively
+		if fkind == reflect.Struct {
+			if err := s.sanitizeRec(field); err != nil {
 				return err
 			}
 			continue
 		}
 
 		// If not struct, use other sanitization functions
-		if sanFn, ok := fieldSanFns[fieldValue.Kind()]; ok {
-			if err := sanFn(s, structValue, i); err != nil {
+		ftype := field.Type()
+		if sanFn, ok := fieldSanFns[ftype.String()]; ok {
+			if err := sanFn(s, v, i); err != nil {
 				return err
 			}
-			continue
 		}
-
 	}
 
 	return nil

@@ -8,6 +8,9 @@ import (
 func Test_sanitizeStrField(t *testing.T) {
 	s, _ := New()
 
+	type TestStrStructNoOp struct {
+		Field string
+	}
 	type TestStrStructTrunc struct {
 		Field string `san:"max=2"`
 	}
@@ -22,6 +25,9 @@ func Test_sanitizeStrField(t *testing.T) {
 	}
 	type TestStrStructTruncTrimLower struct {
 		Field string `san:"max=2,trim,lower"`
+	}
+	type TestStrStructPtrNoOp struct {
+		Field *string
 	}
 	type TestStrStructPtrTrunc struct {
 		Field *string `san:"max=2"`
@@ -41,6 +47,8 @@ func Test_sanitizeStrField(t *testing.T) {
 
 	// Each *string test has isolated arguments and results, since the
 	// arguments will be mutated, they should not be reused
+	argString0 := " tEst "
+	resString0 := " tEst "
 	argString1 := " tEst "
 	resString1 := " t"
 	argString2 := " tEst "
@@ -61,6 +69,19 @@ func Test_sanitizeStrField(t *testing.T) {
 		want    interface{}
 		wantErr bool
 	}{
+		{
+			name: "No operation if field does not have tags for string.",
+			args: args{
+				v: &TestStrStructNoOp{
+					Field: " tEst ",
+				},
+				idx: 0,
+			},
+			want: &TestStrStructNoOp{
+				Field: " tEst ",
+			},
+			wantErr: false,
+		},
 		{
 			name: "Truncates a string field on a struct with the tag.",
 			args: args{
@@ -136,6 +157,19 @@ func Test_sanitizeStrField(t *testing.T) {
 			},
 			want: &TestStrStructTruncTrimLower{
 				Field: "t",
+			},
+			wantErr: false,
+		},
+		{
+			name: "No operation if field does not have tags for *string.",
+			args: args{
+				v: &TestStrStructPtrNoOp{
+					Field: &argString0,
+				},
+				idx: 0,
+			},
+			want: &TestStrStructPtrNoOp{
+				Field: &resString0,
 			},
 			wantErr: false,
 		},
