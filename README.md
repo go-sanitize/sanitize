@@ -2,7 +2,7 @@
 
 Package sanitize provides an easy way to clean fields in structs: trimming, applying maximum string lengths, minimum numeric values, default values, and so on...
 
-Sanitizing a struct will mutate the fields according to rules in the `san` tag. The tags work for both pointers and primitive values.
+Sanitizing a struct will mutate the fields according to rules in the `san` tag. The tags work for both pointers and basic types.
 
 
 ## Install
@@ -40,7 +40,7 @@ func main() {
 
 ### String
 
-1. **max=`<n>`** - Maximum string length. It will crop the string to `<n>` characters if this limit is exceeded
+1. **max=`<n>`** - Maximum string length. It will truncate the string to `<n>` characters if this limit is exceeded
 1. **trim** - Remove trailing spaces left and right
 1. **lower** - Lowercase all characters in the string
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
