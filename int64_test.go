@@ -7,8 +7,27 @@ import (
 
 func Test_sanitizeInt64Field(t *testing.T) {
 	s, _ := New()
+
 	type TestInt64Struct struct {
 		Field int64 `san:"max=42,min=41"`
+	}
+	type TestInt64StructNegativeMinTag struct {
+		Field int64 `san:"max=41,min=-2"`
+	}
+	type TestInt64StructNegativeMaxTag struct {
+		Field int64 `san:"max=-2,min=42"`
+	}
+	type TestInt64StructBadMaxMin struct {
+		Field int64 `san:"max=41,min=42"`
+	}
+	type TestInt64StructBadMinTag struct {
+		Field int64 `san:"max=41,min=3.4"`
+	}
+	type TestInt64StructBadMaxTag struct {
+		Field int64 `san:"max=5.4,min=42"`
+	}
+	type TestInt64StructDef struct {
+		Field int64 `san:"def=43"`
 	}
 	type TestInt64StructPtr struct {
 		Field *int64 `san:"max=42,min=41,def=41"`
@@ -16,170 +35,198 @@ func Test_sanitizeInt64Field(t *testing.T) {
 	type TestInt64StructPtrBadDefMax struct {
 		Field *int64 `san:"max=42,def=43"`
 	}
+	type TestInt64StructPtrBadDefTag struct {
+		Field *int64 `san:"max=42,def=5.5"`
+	}
 	type TestInt64StructPtrBadDefMin struct {
 		Field *int64 `san:"min=41,def=40"`
 	}
 
-	s1 := TestInt64Struct{
-		Field: 43,
-	}
-	s2 := TestInt64Struct{
-		Field: 40,
-	}
-	s3Field := int64(43)
-	s3 := TestInt64StructPtr{
-		Field: &s3Field,
-	}
-	s4 := TestInt64StructPtr{
-		Field: nil,
-	}
-	s5 := TestInt64StructPtrBadDefMax{
-		Field: nil,
-	}
-	s6 := TestInt64StructPtrBadDefMin{
-		Field: nil,
-	}
+	// Each *string test has isolated arguments and results, since the
+	// arguments will be mutated, they should not be reused
+	argInt0 := int64(43)
+	resInt0 := int64(42)
+	resInt1 := int64(41)
 
 	type args struct {
-		v   reflect.Value
+		v   interface{}
 		idx int
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		postTestFn func()
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
 	}{
 		{
 			name: "Caps an int64 field on a struct with the san:max tag.",
 			args: args{
-				v:   reflect.ValueOf(&s1).Elem(),
+				v: &TestInt64Struct{
+					Field: 43,
+				},
 				idx: 0,
 			},
-			wantErr: false,
-			postTestFn: func() {
-				got := s1.Field
-				want := int64(42)
-				if got != want {
-					t.Errorf("sanitizeInt64Field() - failed field - got %+v but wanted %+v", got, want)
-				}
+			want: &TestInt64Struct{
+				Field: 42,
 			},
+			wantErr: false,
 		},
 		{
 			name: "Raises an int64 field on a struct with the san:min tag.",
 			args: args{
-				v:   reflect.ValueOf(&s2).Elem(),
+				v: &TestInt64Struct{
+					Field: 40,
+				},
 				idx: 0,
 			},
-			wantErr: false,
-			postTestFn: func() {
-				got := s2.Field
-				want := int64(41)
-				if got != want {
-					t.Errorf("sanitizeInt64Field() - failed field - got %+v but wanted %+v", got, want)
-				}
+			want: &TestInt64Struct{
+				Field: 41,
 			},
+			wantErr: false,
+		},
+		{
+			name: "Returns an error if a san:min tag on a int64 field is below 0.",
+			args: args{
+				v: &TestInt64StructNegativeMinTag{
+					Field: 40,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructNegativeMinTag{
+				Field: 40,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Returns an error if a san:max tag on a int64 field is below 0.",
+			args: args{
+				v: &TestInt64StructNegativeMaxTag{
+					Field: 40,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructNegativeMaxTag{
+				Field: 40,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Returns an error if a san:min tag on a int64 field is not numeric.",
+			args: args{
+				v: &TestInt64StructBadMinTag{
+					Field: 40,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructBadMinTag{
+				Field: 40,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Returns an error if a san:max tag on a int64 field is not numeric.",
+			args: args{
+				v: &TestInt64StructBadMaxTag{
+					Field: 40,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructBadMaxTag{
+				Field: 40,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Default value does not affect an int64 field on a struct with the tag.",
+			args: args{
+				v:   &TestInt64StructDef{},
+				idx: 0,
+			},
+			want:    &TestInt64StructDef{},
+			wantErr: false,
+		},
+		{
+			name: "Returns an error if the maximum value is smaller than the minimum on a struct with the tags.",
+			args: args{
+				v: &TestInt64StructBadMaxMin{
+					Field: 2,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructBadMaxMin{
+				Field: 2,
+			},
+			wantErr: true,
 		},
 		{
 			name: "Caps an *int64 field on a struct with the san:max tag.",
 			args: args{
-				v:   reflect.ValueOf(&s3).Elem(),
+				v: &TestInt64StructPtr{
+					Field: &argInt0,
+				},
 				idx: 0,
 			},
-			wantErr: false,
-			postTestFn: func() {
-				got := *s3.Field
-				want := int64(42)
-				if got != want {
-					t.Errorf("sanitizeInt64Field() - failed field - got %+v but wanted %+v", got, want)
-				}
+			want: &TestInt64StructPtr{
+				Field: &resInt0,
 			},
+			wantErr: false,
 		},
 		{
 			name: "Puts a default value for a *int64 field that was nil on a struct with the tag.",
 			args: args{
-				v:   reflect.ValueOf(&s4).Elem(),
+				v: &TestInt64StructPtr{
+					Field: nil,
+				},
 				idx: 0,
 			},
-			wantErr: false,
-			postTestFn: func() {
-				got := *s4.Field
-				want := int64(41)
-				if got != want {
-					t.Errorf("sanitizeInt64Field() - failed field - got %+v but wanted %+v", got, want)
-				}
+			want: &TestInt64StructPtr{
+				Field: &resInt1,
 			},
+			wantErr: false,
+		},
+		{
+			name: "Returns an error when the def component for a *int64 field is not numeric.",
+			args: args{
+				v: &TestInt64StructPtrBadDefTag{
+					Field: nil,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructPtrBadDefTag{
+				Field: nil,
+			},
+			wantErr: true,
 		},
 		{
 			name: "Returns an error when the def component and the max component are both present, and the def is higher than the max for a *int64 field that was nil on a struct with the tag.",
 			args: args{
-				v:   reflect.ValueOf(&s5).Elem(),
+				v: &TestInt64StructPtrBadDefMax{
+					Field: nil,
+				},
 				idx: 0,
 			},
-			wantErr:    true,
-			postTestFn: func() {},
+			want:    &TestInt64StructPtrBadDefMax{},
+			wantErr: true,
 		},
 		{
 			name: "Returns an error when the def component and the low component are both present, and the def is lower than the min for a *int64 field that was nil on a struct with the tag.",
 			args: args{
-				v:   reflect.ValueOf(&s6).Elem(),
+				v: &TestInt64StructPtrBadDefMin{
+					Field: nil,
+				},
 				idx: 0,
 			},
-			wantErr:    true,
-			postTestFn: func() {},
+			want:    &TestInt64StructPtrBadDefMin{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := sanitizeInt64Field(*s, tt.args.v, tt.args.idx); (err != nil) != tt.wantErr {
+			if err := sanitizeInt64Field(*s, reflect.ValueOf(tt.args.v).Elem(), tt.args.idx); (err != nil) != tt.wantErr {
 				t.Errorf("sanitizeInt64Field() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			tt.postTestFn()
-		})
-	}
-
-	// Invalid tags
-	type TestInt64StructInvalidTag struct {
-		Field int64 `san:"max=41,min=42"`
-	}
-
-	si1 := TestInt64StructInvalidTag{
-		Field: 42,
-	}
-
-	type argsi struct {
-		v   reflect.Value
-		idx int
-	}
-	testsi := []struct {
-		name    string
-		args    argsi
-		wantErr bool
-		want    TestInt64StructInvalidTag
-		sFn     func() *TestInt64StructInvalidTag
-	}{
-		{
-			name: "Returns an error when asked to sanitize a struct with an invalid min, max pair on an int64 field.",
-			args: argsi{
-				v:   reflect.ValueOf(&si1).Elem(),
-				idx: 0,
-			},
-			wantErr: true,
-			want: TestInt64StructInvalidTag{ // no mutation expected
-				Field: 42,
-			},
-			sFn: func() *TestInt64StructInvalidTag {
-				return &si1
-			},
-		},
-	}
-	for _, tt := range testsi {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := sanitizeInt64Field(*s, tt.args.v, tt.args.idx); (err != nil) != tt.wantErr {
-				t.Errorf("sanitizeInt64Field() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(*tt.sFn(), tt.want) {
-				t.Errorf(`sanitizeInt64Field() = %+v, got %+v`, *tt.sFn(), tt.want)
+			if !reflect.DeepEqual(tt.args.v, tt.want) {
+				t.Errorf("sanitizeInt64Field() - failed field - got %+v but wanted %+v", tt.args.v, tt.want)
 			}
 		})
 	}
