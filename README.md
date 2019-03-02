@@ -1,5 +1,7 @@
 # sanitize
 
+[![CircleCI](https://circleci.com/gh/go-sanitize/sanitize/tree/master.svg?style=svg)](https://circleci.com/gh/go-sanitize/sanitize/tree/master)
+
 Sanitizes structs by mutating them according to rules in `san` tags.
 
 Usage example:
