@@ -3,7 +3,6 @@ package sanitize
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 )
 
 // sanitizeInt64Field sanitizes an int64 field. Requires the whole
@@ -15,89 +14,93 @@ func sanitizeInt64Field(s Sanitizer, structValue reflect.Value, idx int) error {
 
 	tags := s.fieldTags(structValue.Type().Field(idx).Tag)
 
-	if isPtr && fieldValue.IsNil() {
-		// Only handle "def" if it is present, then finish san.
-		if _, ok := tags["def"]; ok {
-			defInt64, err := parseInt64(tags["def"])
-			if err != nil {
-				return err
-			}
+	var err error
 
-			// Look for bad combinations of "def" and error out
-			if _, ok := tags["max"]; ok {
-				maxInt64, err := parseInt64(tags["max"])
-				if err != nil {
-					return err
-				}
-				if defInt64 > maxInt64 {
-					return fmt.Errorf(
-						"incompatible def and max tag components, def (%+v) is "+
-							"higher than max (%+v)",
-						defInt64,
-						maxInt64,
-					)
-				}
-			}
-			if _, ok := tags["min"]; ok {
-				minInt64, err := parseInt64(tags["min"])
-				if err != nil {
-					return err
-				}
-				if defInt64 < minInt64 {
-					return fmt.Errorf(
-						"incompatible def and min tag components, def (%+v) is "+
-							"lower than min (%+v)",
-						defInt64,
-						minInt64,
-					)
-				}
-			}
+	// Minimum value
+	_, hasMin := tags["min"]
+	min := int64(0)
+	if hasMin {
+		min, err = parseInt64(tags["min"])
+		if err != nil {
+			return err
+		}
+	}
 
-			fieldValue.Set(reflect.ValueOf(&defInt64))
+	// Maximum value
+	_, hasMax := tags["max"]
+	max := int64(0)
+	if hasMax {
+		max, err = parseInt64(tags["max"])
+		if err != nil {
+			return err
+		}
+	}
+
+	// Checking if minimum is not higher than maximum
+	if hasMax && hasMin && max < min {
+		return fmt.Errorf(
+			"max less than min on int64 field '%s' during struct sanitization",
+			fieldValue.Type().Name(),
+		)
+	}
+	// Checking if minimum and maximum are above 0
+	if (hasMin && min < 0) || (hasMax && max < 0) {
+		return fmt.Errorf(
+			"min and max on int64 field '%s' can not be below 0",
+			fieldValue.Type().Name(),
+		)
+	}
+
+	// Default value
+	_, hasDef := tags["def"]
+	def := int64(0)
+	if hasDef {
+		def, err = parseInt64(tags["def"])
+		if err != nil {
+			return err
 		}
 
-		return nil
-	}
-
-	if isPtr && !fieldValue.IsNil() {
-		// Dereference then continue as normal.
-		fieldValue = fieldValue.Elem()
-	}
-
-	// Check for invalid component combinations
-	_, maxOk := tags["max"]
-	_, minOk := tags["min"]
-	if maxOk && minOk {
-		if tags["max"] < tags["min"] {
+		// Making sure default is not smaller than min or higher than max
+		if hasMax && def > max {
 			return fmt.Errorf(
-				"max less than min on int64 field '%s' during struct sanitization",
-				fieldValue.Type().Name(),
+				"incompatible def and max tag components, def (%+v) is "+
+					"higher than max (%+v)",
+				def,
+				max,
+			)
+		}
+		if hasMin && def < min {
+			return fmt.Errorf(
+				"incompatible def and min tag components, def (%+v) is "+
+					"lower than min (%+v)",
+				def,
+				min,
 			)
 		}
 	}
 
-	// Loop through pairs and apply string transforms
-	for k, v := range tags {
-		if k == "min" {
-			min, err := strconv.ParseInt(v, 10, 64)
-			if err != nil {
-				return err
-			}
-			oldNum := fieldValue.Int()
-			if min > oldNum {
-				fieldValue.SetInt(min)
-			}
-		}
+	// Pointer, nil, and we have a default: set it
+	if isPtr && fieldValue.IsNil() && hasDef {
+		fieldValue.Set(reflect.ValueOf(&def))
+		return nil
+	}
 
-		if k == "max" {
-			max, err := strconv.ParseInt(v, 10, 64)
-			if err != nil {
-				return err
-			}
-			oldNum := fieldValue.Int()
-			if max < oldNum {
-				fieldValue.SetInt(max)
-			}
+	// Not nil pointer. Dereference then continue as normal
+	if isPtr && !fieldValue.IsNil() {
+		fieldValue = fieldValue.Elem()
+	}
+
+	// Apply min and max transforms
+	if hasMin {
+		oldNum := fieldValue.Int()
+		if min > oldNum {
+			fieldValue.SetInt(min)
+		}
+	}
+	if hasMax {
+		oldNum := fieldValue.Int()
+		if max < oldNum {
+			fieldValue.SetInt(max)
 		}
 	}
 

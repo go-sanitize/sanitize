@@ -1,93 +1,187 @@
 package sanitize
 
 import (
+	"reflect"
 	"testing"
 )
 
-type TestStruct struct {
-	StrField     string  `san:"max=2,trim,lower"`
-	Int64Field   int64   `san:"min=41,max=42"`
-	Float64Field float64 `san:"max=42.3,min=42.2"`
-}
+func Test_Sanitize_Simple(t *testing.T) {
+	type Dog struct {
+		Name  string  `san:"max=5,trim,lower"`
+		Breed *string `san:"def=unknown"`
+	}
 
-type TestStructPtr struct {
-	StrField     *string  `san:"max=2,trim,lower"`
-	Int64Field   *int64   `san:"min=41,max=42"`
-	Float64Field *float64 `san:"max=42.3,min=42.2"`
-}
+	d := Dog{
+		Name:  "Borky Borkins",
+		Breed: nil,
+	}
 
-type TestStructMixedRecursive struct {
-	StrField    string  `san:"max=2,trim,lower"`
-	StrPtrField *string `san:"max=2,trim,lower"`
-	Sub         TestStructMixedRecursiveSub
-	SubPtr      *TestStructMixedRecursiveSub
-}
-type TestStructMixedRecursiveSub struct {
-	StrField    string  `san:"max=2,trim,lower"`
-	StrPtrField *string `san:"max=2,trim,lower"`
+	unknown := "unknown"
+	expected := Dog{
+		Name:  "borky",
+		Breed: &unknown,
+	}
+
+	s, _ := New()
+	s.Sanitize(&d)
+
+	if !reflect.DeepEqual(d, expected) {
+		gotBreed := "<nil>"
+		if d.Breed != nil {
+			gotBreed = *d.Breed
+		}
+		expectedBreed := "<nil>"
+		if expected.Breed != nil {
+			expectedBreed = *expected.Breed
+		}
+		t.Errorf(
+			"Sanitize() - got { Name: %s, Breed: %s } but wanted { Name: %s, Breed: %s }",
+			d.Name,
+			gotBreed,
+			expected.Name,
+			expectedBreed,
+		)
+	}
 }
 
 func Test_Sanitize(t *testing.T) {
+
+	type TestStruct struct {
+		StrField     string  `san:"max=2,trim,lower"`
+		Int64Field   int64   `san:"min=41,max=42"`
+		Float64Field float64 `san:"max=42.3,min=42.2"`
+	}
+
+	type TestStructPtr struct {
+		StrField     *string  `san:"max=2,trim,lower"`
+		Int64Field   *int64   `san:"min=41,max=42"`
+		Float64Field *float64 `san:"max=42.3,min=42.2"`
+	}
+
+	type TestStructMixedRecursiveSub struct {
+		StrField    string  `san:"max=2,trim,lower"`
+		StrPtrField *string `san:"max=2,trim,lower"`
+	}
+
+	type TestStructMixedRecursive struct {
+		StrField    string  `san:"max=2,trim,lower"`
+		StrPtrField *string `san:"max=2,trim,lower"`
+		Sub1        TestStructMixedRecursiveSub
+		SubPtr1     *TestStructMixedRecursiveSub
+		Sub2        TestStruct
+		SubPtr2     *TestStructPtr
+		SubPtr3     *TestStructPtr
+	}
+
+	type TestBadStruct struct {
+		Int64Field int64 `san:"min=42,max=41"`
+	}
+
+	type TestBadNestedStruct struct {
+		Sub TestBadStruct
+	}
+
 	s, _ := New()
-	ts1 := TestStruct{
-		StrField:     " tEst ",
-		Int64Field:   43,
-		Float64Field: 42.4,
-	}
-	ts2Str := " tEst "
-	ts2Int := int64(43)
-	ts2Float := float64(42.4)
-	ts2 := TestStructPtr{
-		StrField:     &ts2Str,
-		Int64Field:   &ts2Int,
-		Float64Field: &ts2Float,
-	}
+
+	arg1 := " PTRTEST "
+	res1 := "pt"
+	arg2 := " subptrtest1 "
+	res2 := "su"
+	arg3 := " subptrtest2 "
+	res3 := "su"
+	arg4 := "world"
+	res4 := "wo"
+	arg5 := int64(11)
+	res5 := int64(41)
+	arg6 := 90.2
+	res6 := 42.3
 
 	type args struct {
 		s interface{}
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		want       TestStruct
-		postTestFn func()
+		name    string
+		args    args
+		wantErr bool
+		want    interface{}
 	}{
 		{
-			name: "Sanitizes a struct that contains a string field, int64 field, and float64 field.",
+			name: "Sanitizes a struct that contains all types of fields.",
 			args: args{
-				s: &ts1,
+				s: &TestStructMixedRecursive{
+					StrField:    " TEST ",
+					StrPtrField: &arg1,
+					Sub1: TestStructMixedRecursiveSub{
+						StrField:    " subtest1 ",
+						StrPtrField: &arg2,
+					},
+					SubPtr1: &TestStructMixedRecursiveSub{
+						StrField:    " subtest2 ",
+						StrPtrField: &arg3,
+					},
+					Sub2: TestStruct{
+						StrField:     "hello",
+						Int64Field:   10,
+						Float64Field: 80.1,
+					},
+					SubPtr2: &TestStructPtr{
+						StrField:     &arg4,
+						Int64Field:   &arg5,
+						Float64Field: &arg6,
+					},
+				},
+			},
+			want: &TestStructMixedRecursive{
+				StrField:    "te",
+				StrPtrField: &res1,
+				Sub1: TestStructMixedRecursiveSub{
+					StrField:    "su",
+					StrPtrField: &res2,
+				},
+				SubPtr1: &TestStructMixedRecursiveSub{
+					StrField:    "su",
+					StrPtrField: &res3,
+				},
+				Sub2: TestStruct{
+					StrField:     "he",
+					Int64Field:   41,
+					Float64Field: 42.3,
+				},
+				SubPtr2: &TestStructPtr{
+					StrField:     &res4,
+					Int64Field:   &res5,
+					Float64Field: &res6,
+				},
 			},
 			wantErr: false,
-			postTestFn: func() {
-				if ts1.StrField != "te" {
-					t.Error("sanitizeRec() - failed string field")
-				}
-				if ts1.Int64Field != 42 {
-					t.Error("sanitizeRec() - failed int64 field")
-				}
-				if ts1.Float64Field != 42.3 {
-					t.Error("sanitizeRec() - failed int64 field")
-				}
-			},
 		},
 		{
-			name: "Sanitizes a struct that contains a *string field, *int64 field, and *float64 field.",
+			name: "Returns an error if there are problems with the struct tags",
 			args: args{
-				s: &ts2,
+				s: &TestBadStruct{
+					Int64Field: 10,
+				},
 			},
-			wantErr: false,
-			postTestFn: func() {
-				if *ts2.StrField != "te" {
-					t.Error("sanitizeRec() - failed *string field")
-				}
-				if *ts2.Int64Field != 42 {
-					t.Error("sanitizeRec() - failed *int64 field")
-				}
-				if *ts2.Float64Field != 42.3 {
-					t.Error("sanitizeRec() - failed *int64 field")
-				}
+			want: &TestBadStruct{
+				Int64Field: 10,
 			},
+			wantErr: true,
+		},
+		{
+			name: "Returns an error if there are problems with a nested struct tags",
+			args: args{
+				s: &TestBadNestedStruct{
+					Sub: TestBadStruct{
+						Int64Field: 10,
+					},
+				},
+			},
+			want: &TestBadNestedStruct{
+				Sub: TestBadStruct{
+					Int64Field: 10,
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -95,7 +189,9 @@ func Test_Sanitize(t *testing.T) {
 			if err := s.Sanitize(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("Sanitize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			tt.postTestFn()
+			if !reflect.DeepEqual(tt.args.s, tt.want) {
+				t.Errorf("Sanitize() - got %+v but wanted %+v", tt.args.s, tt.want)
+			}
 		})
 	}
 }
