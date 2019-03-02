@@ -7,6 +7,7 @@ import (
 
 func Test_sanitizeStrField(t *testing.T) {
 	s, _ := New()
+
 	type TestStrStruct struct {
 		Field string `san:"max=2,trim,lower"`
 	}

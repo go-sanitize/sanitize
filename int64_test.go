@@ -7,6 +7,7 @@ import (
 
 func Test_sanitizeInt64Field(t *testing.T) {
 	s, _ := New()
+	
 	type TestInt64Struct struct {
 		Field int64 `san:"max=42,min=41"`
 	}

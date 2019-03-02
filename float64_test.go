@@ -7,6 +7,7 @@ import (
 
 func Test_sanitizeFloat64Field(t *testing.T) {
 	s, _ := New()
+	
 	type TestFloat64Struct struct {
 		Field float64 `san:"max=42.3,min=42.2"`
 	}
