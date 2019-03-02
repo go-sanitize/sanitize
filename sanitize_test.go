@@ -1,6 +1,7 @@
 package sanitize
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -25,6 +26,45 @@ type TestStructMixedRecursive struct {
 type TestStructMixedRecursiveSub struct {
 	StrField    string  `san:"max=2,trim,lower"`
 	StrPtrField *string `san:"max=2,trim,lower"`
+}
+
+func Test_Sanitize_Simple(t *testing.T) {
+	type Dog struct {
+		Name  string  `san:"max=5,trim,lower"`
+		Breed *string `san:"def=unknown"`
+	}
+
+	d := Dog{
+		Name:  "Borky Borkins",
+		Breed: nil,
+	}
+
+	unknown := "unknown"
+	expected := Dog{
+		Name:  "Borky",
+		Breed: &unknown,
+	}
+
+	s, _ := New()
+	s.Sanitize(&d)
+
+	if !reflect.DeepEqual(d, expected) {
+		gotBreed := "<nil>"
+		if d.Breed != nil {
+			gotBreed = *d.Breed
+		}
+		expectedBreed := "<nil>"
+		if expected.Breed != nil {
+			expectedBreed = *expected.Breed
+		}
+		t.Errorf(
+			"Sanitize() - got { Name: %s, Breed: %s } but wanted { Name: %s, Breed: %s }",
+			d.Name,
+			gotBreed,
+			expected.Name,
+			expectedBreed,
+		)
+	}
 }
 
 func Test_Sanitize(t *testing.T) {
