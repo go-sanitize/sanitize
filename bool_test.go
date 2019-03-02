@@ -27,6 +27,9 @@ func Test_sanitizeBoolField(t *testing.T) {
 		Field *bool `san:"def=maybe"`
 	}
 
+	boolFalse := false
+	boolTrue := true
+
 	type args struct {
 		v   interface{}
 		idx int
@@ -85,7 +88,7 @@ func Test_sanitizeBoolField(t *testing.T) {
 				idx: 0,
 			},
 			want: &TestBoolStructPtrDefTrue{
-				Field: &pointers.boolTrue,
+				Field: &boolTrue,
 			},
 			wantErr: false,
 		},
@@ -98,7 +101,7 @@ func Test_sanitizeBoolField(t *testing.T) {
 				idx: 0,
 			},
 			want: &TestBoolStructPtrDefFalse{
-				Field: &pointers.boolFalse,
+				Field: &boolFalse,
 			},
 			wantErr: false,
 		},
