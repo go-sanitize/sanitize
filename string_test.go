@@ -14,6 +14,9 @@ func Test_sanitizeStrField(t *testing.T) {
 	type TestStrStructTrunc struct {
 		Field string `san:"max=2"`
 	}
+	type TestStrStructBadTrunc struct {
+		Field string `san:"max=no"`
+	}
 	type TestStrStructTrim struct {
 		Field string `san:"trim"`
 	}
@@ -94,6 +97,19 @@ func Test_sanitizeStrField(t *testing.T) {
 				Field: " t",
 			},
 			wantErr: false,
+		},
+		{
+			name: "Returns an error when max tag is not numeric for a string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructBadTrunc{
+					Field: " tEst ",
+				},
+				idx: 0,
+			},
+			want: &TestStrStructBadTrunc{
+				Field: " tEst ",
+			},
+			wantErr: true,
 		},
 		{
 			name: "Trims a string field on a struct with the tag.",
