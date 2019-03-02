@@ -40,21 +40,21 @@ func main() {
 
 ### String
 
-1. *max* - Maximum string length. It will crop the string if this limit is exceeded
+1. *max=<n>* - Maximum string length. It will crop the string to `<n>` characters if this limit is exceeded
 1. *trim* - Remove trailing spaces left and right
 1. *lower* - Lowercase all characters in the string
-1. *def* (only available for pointers) - Sets a default value in case the pointer is `nil`
+1. *def=<n>* (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
 
 The order of precedence will be: **trim** -> **max** -> **lower**
 
 
 ### Int64, Float64
 
-1. *max* - Highest value allowed. If the limit is exceeded, the value will be set to the limit
-1. *min* - Lowest value allowed. If the limit is exceeded, the value will be set to the limit
-1. *def* (only available for pointers) - Sets a default value in case the pointer is `nil`
+1. *max=<n>* - Highest value allowed. If the limit is exceeded, the value will be set to `<n>`
+1. *min=<n>* - Lowest value allowed. If the limit is exceeded, the value will be set to `<n>`
+1. *def=<n>* (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
 
 
 ### Bool
 
-1. *def* (only available for pointers) - Sets a default value in case the pointer is `nil`
+1. *def=<n>* (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
