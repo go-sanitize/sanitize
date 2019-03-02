@@ -11,6 +11,12 @@ func Test_sanitizeInt64Field(t *testing.T) {
 	type TestInt64Struct struct {
 		Field int64 `san:"max=42,min=41"`
 	}
+	type TestInt64StructNegativeMinTag struct {
+		Field int64 `san:"max=41,min=-2"`
+	}
+	type TestInt64StructNegativeMaxTag struct {
+		Field int64 `san:"max=-2,min=42"`
+	}
 	type TestInt64StructBadMaxMin struct {
 		Field int64 `san:"max=41,min=42"`
 	}
@@ -77,6 +83,32 @@ func Test_sanitizeInt64Field(t *testing.T) {
 				Field: 41,
 			},
 			wantErr: false,
+		},
+		{
+			name: "Returns an error if a san:min tag on a int64 field is below 0.",
+			args: args{
+				v: &TestInt64StructNegativeMinTag{
+					Field: 40,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructNegativeMinTag{
+				Field: 40,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Returns an error if a san:max tag on a int64 field is below 0.",
+			args: args{
+				v: &TestInt64StructNegativeMaxTag{
+					Field: 40,
+				},
+				idx: 0,
+			},
+			want: &TestInt64StructNegativeMaxTag{
+				Field: 40,
+			},
+			wantErr: true,
 		},
 		{
 			name: "Returns an error if a san:min tag on a int64 field is not numeric.",

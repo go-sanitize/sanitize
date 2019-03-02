@@ -72,10 +72,6 @@ var fieldSanFns = map[string]fieldSanFn{
 // Called during recursion, since during recursion we need reflect.Value
 // not interface{}.
 func (s Sanitizer) sanitizeRec(v reflect.Value) error {
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
 	// Loop through fields of struct. If a struct is encountered, recurse. If a
 	// string is encountered, transform it. Else, skip.
 	for i := 0; i < v.Type().NumField(); i++ {
@@ -83,7 +79,11 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 		fkind := field.Kind()
 
 		// If the field is a struct, sanitize it recursively
-		if fkind == reflect.Struct {
+		isPtrToStruct := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Struct
+		if fkind == reflect.Struct || isPtrToStruct {
+			if isPtrToStruct {
+				field = field.Elem()
+			}
 			if err := s.sanitizeRec(field); err != nil {
 				return err
 			}

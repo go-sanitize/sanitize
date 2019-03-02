@@ -43,6 +43,13 @@ func sanitizeInt64Field(s Sanitizer, structValue reflect.Value, idx int) error {
 			fieldValue.Type().Name(),
 		)
 	}
+	// Checking if minimum and maximum are above 0
+	if (hasMin && min < 0) || (hasMax && max < 0) {
+		return fmt.Errorf(
+			"min and max on int64 field '%s' can not be below 0",
+			fieldValue.Type().Name(),
+		)
+	}
 
 	// Default value
 	_, hasDef := tags["def"]
