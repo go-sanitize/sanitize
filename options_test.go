@@ -17,7 +17,7 @@ func (o unknownOption) value() string {
 	return "very strange indeed"
 }
 
-func TestNew(t *testing.T) {
+func Test_New(t *testing.T) {
 	type args struct {
 		options []Option
 	}

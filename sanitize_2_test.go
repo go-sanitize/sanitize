@@ -1,7 +1,6 @@
 package sanitize
 
 /*
-
 import (
 	"reflect"
 	"testing"
@@ -30,7 +29,7 @@ type TestStructMixedRecursiveSub struct {
 	StrPtrField *string `san:"max=2,trim,lower"`
 }
 
-func Test_Struct(t *testing.T) {
+func Test_Sanitize(t *testing.T) {
 	ts1 := TestStruct{
 		StrField:     " tEst ",
 		Int64Field:   43,
@@ -742,32 +741,6 @@ func Test_sanitizeBoolField(t *testing.T) {
 				t.Errorf("sanitizeBoolField() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			tt.postTestFn()
-		})
-	}
-}
-
-func TestNew(t *testing.T) {
-	type args struct {
-		options []Option
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *Sanitizer
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.options...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("New() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
