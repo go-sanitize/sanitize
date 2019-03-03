@@ -98,15 +98,14 @@ func toCap(s string) string {
 		b[i] = s[i]
 		c := b[i]
 		if c >= 'A' && c <= 'Z' { // Already capitalized
-			i++
 			break
 		}
 		if c >= 'a' && c <= 'z' { // Must be capitalized
 			b[i] -= casediff
-			i++
 			break
 		}
 	}
+	i++
 	for ; i < len(s); i++ { // Lowering all other characters
 		b[i] = s[i]
 		c := b[i]
