@@ -1,5 +1,7 @@
 # sanitize
 
+[![CircleCI](https://circleci.com/gh/go-sanitize/sanitize/tree/master.svg?style=svg)](https://circleci.com/gh/go-sanitize/sanitize/tree/master)
+
 Package sanitize provides an easy way to clean fields in structs: trimming, applying maximum string lengths, minimum numeric values, default values, and so on...
 
 Sanitizing a struct will mutate the fields according to rules in the `san` tag. The tags work for both pointers and basic types.
