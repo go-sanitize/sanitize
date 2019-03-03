@@ -45,6 +45,9 @@ func main() {
 1. **max=`<n>`** - Maximum string length. It will truncate the string to `<n>` characters if this limit is exceeded
 1. **trim** - Remove trailing spaces left and right
 1. **lower** - Lowercase all characters in the string
+1. **upper** - Uppercase all characters in the string
+1. **title** - First character of every word is changed to uppercase, the rest to lowercase
+1. **cap** - Only the first letter of the string will be changed to uppercase, the rest to lowercase
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
 
 The order of precedence will be: **trim** -> **max** -> **lower**

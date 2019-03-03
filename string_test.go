@@ -23,6 +23,15 @@ func Test_sanitizeStrField(t *testing.T) {
 	type TestStrStructLower struct {
 		Field string `san:"lower"`
 	}
+	type TestStrStructUpper struct {
+		Field string `san:"upper"`
+	}
+	type TestStrStructTitle struct {
+		Field string `san:"title"`
+	}
+	type TestStrStructCap struct {
+		Field string `san:"cap"`
+	}
 	type TestStrStructDef struct {
 		Field string `san:"def=et"`
 	}
@@ -41,6 +50,15 @@ func Test_sanitizeStrField(t *testing.T) {
 	type TestStrStructPtrLower struct {
 		Field *string `san:"lower"`
 	}
+	type TestStrStructPtrUpper struct {
+		Field *string `san:"upper"`
+	}
+	type TestStrStructPtrTitle struct {
+		Field *string `san:"title"`
+	}
+	type TestStrStructPtrCap struct {
+		Field *string `san:"cap"`
+	}
 	type TestStrStructPtrDef struct {
 		Field *string `san:"def=et"`
 	}
@@ -56,11 +74,17 @@ func Test_sanitizeStrField(t *testing.T) {
 	resString1 := " t"
 	argString2 := " tEst "
 	resString2 := "tEst"
-	argString3 := " tEst "
-	resString3 := " test "
+	argString3 := " tEst TeSt test TEST "
+	resString3 := " test test test test "
 	resString4 := "et"
 	argString5 := " tEst "
 	resString5 := "te"
+	argString6 := " tEst TeSt test TEST "
+	resString6 := " TEST TEST TEST TEST "
+	argString7 := " tEst TeSt test TEST "
+	resString7 := " Test Test Test Test "
+	argString8 := " tEst TeSt test TEST "
+	resString8 := " Test test test test "
 
 	type args struct {
 		v   interface{}
@@ -128,12 +152,51 @@ func Test_sanitizeStrField(t *testing.T) {
 			name: "Lowercases a string field on a struct with the tag.",
 			args: args{
 				v: &TestStrStructLower{
-					Field: " tEst ",
+					Field: " tEst TeSt test TEST ",
 				},
 				idx: 0,
 			},
 			want: &TestStrStructLower{
-				Field: " test ",
+				Field: " test test test test ",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Uppercases a string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructUpper{
+					Field: " tEst TeSt test TEST ",
+				},
+				idx: 0,
+			},
+			want: &TestStrStructUpper{
+				Field: " TEST TEST TEST TEST ",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Title cases a string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructTitle{
+					Field: " tEst TeSt test TEST ",
+				},
+				idx: 0,
+			},
+			want: &TestStrStructTitle{
+				Field: " Test Test Test Test ",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Capitalizes a string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructCap{
+					Field: " tEst TeSt test TEST ",
+				},
+				idx: 0,
+			},
+			want: &TestStrStructCap{
+				Field: " Test test test test ",
 			},
 			wantErr: false,
 		},
@@ -219,12 +282,51 @@ func Test_sanitizeStrField(t *testing.T) {
 			name: "Lowercases a *string field on a struct with the tag.",
 			args: args{
 				v: &TestStrStructPtrLower{
-					Field: &argString3, // ' tEst '
+					Field: &argString3, // ' tEst TeSt test TEST '
 				},
 				idx: 0,
 			},
 			want: &TestStrStructPtrLower{
-				Field: &resString3, // ' test '
+				Field: &resString3, // ' test test test test '
+			},
+			wantErr: false,
+		},
+		{
+			name: "Uppercases a *string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructPtrUpper{
+					Field: &argString6, // ' tEst TeSt test TEST '
+				},
+				idx: 0,
+			},
+			want: &TestStrStructPtrUpper{
+				Field: &resString6, // ' TEST TEST TEST TEST '
+			},
+			wantErr: false,
+		},
+		{
+			name: "Title cases a *string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructPtrTitle{
+					Field: &argString7, // ' tEst TeSt test TEST '
+				},
+				idx: 0,
+			},
+			want: &TestStrStructPtrTitle{
+				Field: &resString7, // ' Test Test Test Test '
+			},
+			wantErr: false,
+		},
+		{
+			name: "Capitalizes a *string field on a struct with the tag.",
+			args: args{
+				v: &TestStrStructPtrCap{
+					Field: &argString8, // ' tEst TeSt test TEST '
+				},
+				idx: 0,
+			},
+			want: &TestStrStructPtrCap{
+				Field: &resString8, // ' Test test test test '
 			},
 			wantErr: false,
 		},
@@ -262,6 +364,60 @@ func Test_sanitizeStrField(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.args.v, tt.want) {
 				t.Errorf("sanitizeStrField() - failed field - got %+v but wanted %+v", tt.args.v, tt.want)
+			}
+		})
+	}
+}
+
+func Test_toTitle(t *testing.T) {
+	tests := []struct {
+		s    string
+		want string
+	}{
+		{
+			s:    " lorem! IPSUM. doLOR, sIT& aMeT_ ",
+			want: " Lorem! Ipsum. Dolor, Sit& Amet_ ",
+		},
+		{
+			s:    "hello World",
+			want: "Hello World",
+		},
+		{
+			s:    " FOO BAR",
+			want: " Foo Bar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			if got := toTitle(tt.s); got != tt.want {
+				t.Errorf("toTitle() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_toCap(t *testing.T) {
+	tests := []struct {
+		s    string
+		want string
+	}{
+		{
+			s:    " lorem! IPSUM. doLOR, sIT& aMeT_ ",
+			want: " Lorem! ipsum. dolor, sit& amet_ ",
+		},
+		{
+			s:    "hello world",
+			want: "Hello world",
+		},
+		{
+			s:    " FOO BAR",
+			want: " Foo bar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			if got := toCap(tt.s); got != tt.want {
+				t.Errorf("toCap() = %v, want %v", got, tt.want)
 			}
 		})
 	}
