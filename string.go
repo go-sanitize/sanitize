@@ -54,6 +54,65 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 		oldStr := fieldValue.String()
 		fieldValue.SetString(strings.ToLower(oldStr))
 	}
+	if _, ok := tags["upper"]; ok {
+		oldStr := fieldValue.String()
+		fieldValue.SetString(strings.ToUpper(oldStr))
+	}
+	if _, ok := tags["title"]; ok {
+		oldStr := fieldValue.String()
+		fieldValue.SetString(toTitle(oldStr))
+	}
+	if _, ok := tags["cap"]; ok {
+		oldStr := fieldValue.String()
+		fieldValue.SetString(toCap(oldStr))
+	}
 
 	return nil
+}
+
+func toTitle(s string) string {
+	b := make([]byte, len(s))
+	casediff := byte('a' - 'A')
+	inWord := false
+	for i := 0; i < len(s); i++ {
+		b[i] = s[i]
+		c := b[i]
+		isLower := c >= 'a' && c <= 'z'
+		isUpper := c >= 'A' && c <= 'Z'
+		if !inWord && isLower { // Not inside a word and it's lower case
+			b[i] -= casediff
+		}
+		if inWord && isUpper { // Inside a word and it's upper case
+			b[i] += casediff
+		}
+		inWord = isLower || isUpper
+	}
+	return string(b)
+}
+
+func toCap(s string) string {
+	b := make([]byte, len(s))
+	casediff := byte('a' - 'A')
+	i := 0
+	for ; i < len(s); i++ { // Looking for first character
+		b[i] = s[i]
+		c := b[i]
+		if c >= 'A' && c <= 'Z' { // Already capitalized
+			i++
+			break
+		}
+		if c >= 'a' && c <= 'z' { // Must be capitalized
+			b[i] -= casediff
+			i++
+			break
+		}
+	}
+	for ; i < len(s); i++ { // Lowering all other characters
+		b[i] = s[i]
+		c := b[i]
+		if c >= 'A' && c <= 'Z' {
+			b[i] += casediff
+		}
+	}
+	return string(b)
 }
