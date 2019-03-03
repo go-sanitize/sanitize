@@ -38,7 +38,7 @@ func main() {
 
 ## Available tags
 
-### String
+### string
 
 1. **max=`<n>`** - Maximum string length. It will truncate the string to `<n>` characters if this limit is exceeded
 1. **trim** - Remove trailing spaces left and right
@@ -48,13 +48,15 @@ func main() {
 The order of precedence will be: **trim** -> **max** -> **lower**
 
 
-### Int64, Float64
+### int, uint, and float
+
+Available for: *int*, *int8*, *int16*, *int32*, *int64*, *uint*, *uint8*, *uint16*, *uint32*, *uint64*, *float32*, and *float64*
 
 1. **max=`<n>`** - Highest value allowed. If the limit is exceeded, the value will be set to `<n>`
 1. **min=`<n>`** - Lowest value allowed. If the limit is exceeded, the value will be set to `<n>`
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
 
 
-### Bool
+### bool
 
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
