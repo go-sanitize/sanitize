@@ -48,13 +48,33 @@ func Test_Sanitize(t *testing.T) {
 
 	type TestStruct struct {
 		StrField     string  `san:"max=2,trim,lower"`
-		Int64Field   int64   `san:"min=41,max=42"`
+		IntField     int     `san:"min=11,max=12"`
+		Int8Field    int8    `san:"min=21,max=22"`
+		Int16Field   int16   `san:"min=31,max=32"`
+		Int32Field   int32   `san:"min=41,max=42"`
+		Int64Field   int64   `san:"min=51,max=52"`
+		UintField    uint    `san:"min=61,max=62"`
+		Uint8Field   uint8   `san:"min=71,max=72"`
+		Uint16Field  uint16  `san:"min=81,max=82"`
+		Uint32Field  uint32  `san:"min=91,max=92"`
+		Uint64Field  uint64  `san:"min=101,max=102"`
+		Float32Field float32 `san:"max=22.3,min=22.2"`
 		Float64Field float64 `san:"max=42.3,min=42.2"`
 	}
 
 	type TestStructPtr struct {
 		StrField     *string  `san:"max=2,trim,lower"`
-		Int64Field   *int64   `san:"min=41,max=42"`
+		IntField     *int     `san:"min=11,max=12"`
+		Int8Field    *int8    `san:"min=21,max=22"`
+		Int16Field   *int16   `san:"min=31,max=32"`
+		Int32Field   *int32   `san:"min=41,max=42"`
+		Int64Field   *int64   `san:"min=51,max=52"`
+		UintField    *uint    `san:"min=61,max=62"`
+		Uint8Field   *uint8   `san:"min=71,max=72"`
+		Uint16Field  *uint16  `san:"min=81,max=82"`
+		Uint32Field  *uint32  `san:"min=91,max=92"`
+		Uint64Field  *uint64  `san:"min=101,max=102"`
+		Float32Field *float32 `san:"max=22.3,min=22.2"`
 		Float64Field *float64 `san:"max=42.3,min=42.2"`
 	}
 
@@ -91,10 +111,30 @@ func Test_Sanitize(t *testing.T) {
 	res3 := "su"
 	arg4 := "world"
 	res4 := "wo"
-	arg5 := int64(11)
-	res5 := int64(41)
-	arg6 := 90.2
-	res6 := 42.3
+	arg5 := int(10)
+	res5 := int(11)
+	arg6 := int8(11)
+	res6 := int8(21)
+	arg7 := int16(11)
+	res7 := int16(31)
+	arg8 := int32(11)
+	res8 := int32(41)
+	arg9 := int64(11)
+	res9 := int64(51)
+	arg10 := uint(10)
+	res10 := uint(61)
+	arg11 := uint8(11)
+	res11 := uint8(71)
+	arg12 := uint16(11)
+	res12 := uint16(81)
+	arg13 := uint32(11)
+	res13 := uint32(91)
+	arg14 := uint64(11)
+	res14 := uint64(101)
+	arg15 := float32(90.2)
+	res15 := float32(22.3)
+	arg16 := 90.2
+	res16 := 42.3
 
 	type args struct {
 		s interface{}
@@ -121,13 +161,33 @@ func Test_Sanitize(t *testing.T) {
 					},
 					Sub2: TestStruct{
 						StrField:     "hello",
-						Int64Field:   10,
+						IntField:     1,
+						Int8Field:    1,
+						Int16Field:   1,
+						Int32Field:   1,
+						Int64Field:   1,
+						UintField:    1,
+						Uint8Field:   1,
+						Uint16Field:  1,
+						Uint32Field:  1,
+						Uint64Field:  1,
+						Float32Field: 80.1,
 						Float64Field: 80.1,
 					},
 					SubPtr2: &TestStructPtr{
 						StrField:     &arg4,
-						Int64Field:   &arg5,
-						Float64Field: &arg6,
+						IntField:     &arg5,
+						Int8Field:    &arg6,
+						Int16Field:   &arg7,
+						Int32Field:   &arg8,
+						Int64Field:   &arg9,
+						UintField:    &arg10,
+						Uint8Field:   &arg11,
+						Uint16Field:  &arg12,
+						Uint32Field:  &arg13,
+						Uint64Field:  &arg14,
+						Float32Field: &arg15,
+						Float64Field: &arg16,
 					},
 				},
 			},
@@ -144,13 +204,33 @@ func Test_Sanitize(t *testing.T) {
 				},
 				Sub2: TestStruct{
 					StrField:     "he",
-					Int64Field:   41,
+					IntField:     11,
+					Int8Field:    21,
+					Int16Field:   31,
+					Int32Field:   41,
+					Int64Field:   51,
+					UintField:    61,
+					Uint8Field:   71,
+					Uint16Field:  81,
+					Uint32Field:  91,
+					Uint64Field:  101,
+					Float32Field: 22.3,
 					Float64Field: 42.3,
 				},
 				SubPtr2: &TestStructPtr{
 					StrField:     &res4,
-					Int64Field:   &res5,
-					Float64Field: &res6,
+					IntField:     &res5,
+					Int8Field:    &res6,
+					Int16Field:   &res7,
+					Int32Field:   &res8,
+					Int64Field:   &res9,
+					UintField:    &res10,
+					Uint8Field:   &res11,
+					Uint16Field:  &res12,
+					Uint32Field:  &res13,
+					Uint64Field:  &res14,
+					Float32Field: &res15,
+					Float64Field: &res16,
 				},
 			},
 			wantErr: false,
