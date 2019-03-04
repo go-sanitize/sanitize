@@ -5,14 +5,28 @@ import (
 	"reflect"
 )
 
-// sanitizeInt8Field sanitizes an int8 field. Requires the whole
+// sanitizeInt8Field sanitizes a int8 field. Requires the whole
 // reflect.Value for the struct because it needs access to both the Value and
 // Type of the struct.
 func sanitizeInt8Field(s Sanitizer, structValue reflect.Value, idx int) error {
 	fieldValue := structValue.Field(idx)
-	isPtr := fieldValue.Kind() == reflect.Ptr
 
 	tags := s.fieldTags(structValue.Type().Field(idx).Tag)
+
+	if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
+		fieldValue = fieldValue.Elem()
+	}
+
+	isSlice := fieldValue.Kind() == reflect.Slice
+
+	var fields []reflect.Value
+	if !isSlice {
+		fields = []reflect.Value{fieldValue}
+	} else {
+		for i := 0; i < fieldValue.Len(); i++ {
+			fields = append(fields, fieldValue.Index(i))
+		}
+	}
 
 	var err error
 
@@ -79,28 +93,37 @@ func sanitizeInt8Field(s Sanitizer, structValue reflect.Value, idx int) error {
 		}
 	}
 
-	// Pointer, nil, and we have a default: set it
-	if isPtr && fieldValue.IsNil() && hasDef {
-		fieldValue.Set(reflect.ValueOf(&def))
-		return nil
-	}
+	for _, field := range fields {
+		isPtr := field.Kind() == reflect.Ptr
 
-	// Not nil pointer. Dereference then continue as normal
-	if isPtr && !fieldValue.IsNil() {
-		fieldValue = fieldValue.Elem()
-	}
-
-	// Apply min and max transforms
-	if hasMin {
-		oldNum := int8(fieldValue.Int())
-		if min > oldNum {
-			fieldValue.SetInt(int64(min))
+		// Pointer, nil, and we have a default: set it
+		if isPtr && field.IsNil() && hasDef {
+			field.Set(reflect.ValueOf(&def))
+			return nil
 		}
-	}
-	if hasMax {
-		oldNum := int8(fieldValue.Int())
-		if max < oldNum {
-			fieldValue.SetInt(int64(max))
+
+		// Pointer, nil, and no default
+		if isPtr && field.IsNil() && !hasDef {
+			return nil
+		}
+
+		// Not nil pointer. Dereference then continue as normal
+		if isPtr && !field.IsNil() {
+			field = field.Elem()
+		}
+
+		// Apply min and max transforms
+		if hasMin {
+			oldNum := field.Int()
+			if min > int8(oldNum) {
+				field.SetInt(int64(min))
+			}
+		}
+		if hasMax {
+			oldNum := field.Int()
+			if max < int8(oldNum) {
+				field.SetInt(int64(max))
+			}
 		}
 	}
 

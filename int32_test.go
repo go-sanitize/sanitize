@@ -21,22 +21,25 @@ func Test_sanitizeInt32Field(t *testing.T) {
 		Field int32 `san:"max=41,min=42"`
 	}
 	type TestInt32StructBadMinTag struct {
-		Field int32 `san:"max=41,min=3.4"`
+		Field int32 `san:"max=41,min=no"`
 	}
 	type TestInt32StructBadMaxTag struct {
-		Field int32 `san:"max=5.4,min=42"`
+		Field int32 `san:"max=no,min=42"`
 	}
 	type TestInt32StructDef struct {
 		Field int32 `san:"def=43"`
 	}
 	type TestInt32StructPtr struct {
+		Field *int32 `san:"max=42,min=41"`
+	}
+	type TestInt32StructPtrDef struct {
 		Field *int32 `san:"max=42,min=41,def=41"`
 	}
 	type TestInt32StructPtrBadDefMax struct {
 		Field *int32 `san:"max=42,def=43"`
 	}
 	type TestInt32StructPtrBadDefTag struct {
-		Field *int32 `san:"max=42,def=5.5"`
+		Field *int32 `san:"max=42,def=no"`
 	}
 	type TestInt32StructPtrBadDefMin struct {
 		Field *int32 `san:"min=41,def=40"`
@@ -75,7 +78,7 @@ func Test_sanitizeInt32Field(t *testing.T) {
 			name: "Raises an int32 field on a struct with the san:min tag.",
 			args: args{
 				v: &TestInt32Struct{
-					Field: 40,
+					Field: 40.0,
 				},
 				idx: 0,
 			},
@@ -159,20 +162,7 @@ func Test_sanitizeInt32Field(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Caps an *int32 field on a struct with the san:max tag.",
-			args: args{
-				v: &TestInt32StructPtr{
-					Field: &argInt0,
-				},
-				idx: 0,
-			},
-			want: &TestInt32StructPtr{
-				Field: &resInt0,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Puts a default value for a *int32 field that was nil on a struct with the tag.",
+			name: "Ignores a nil *int32 field that was nil on a struct without a def tag.",
 			args: args{
 				v: &TestInt32StructPtr{
 					Field: nil,
@@ -180,6 +170,32 @@ func Test_sanitizeInt32Field(t *testing.T) {
 				idx: 0,
 			},
 			want: &TestInt32StructPtr{
+				Field: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Caps an *int32 field on a struct with the san:max tag.",
+			args: args{
+				v: &TestInt32StructPtrDef{
+					Field: &argInt0,
+				},
+				idx: 0,
+			},
+			want: &TestInt32StructPtrDef{
+				Field: &resInt0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Puts a default value for a *int32 field that was nil on a struct with the tag.",
+			args: args{
+				v: &TestInt32StructPtrDef{
+					Field: nil,
+				},
+				idx: 0,
+			},
+			want: &TestInt32StructPtrDef{
 				Field: &resInt1,
 			},
 			wantErr: false,
@@ -218,6 +234,246 @@ func Test_sanitizeInt32Field(t *testing.T) {
 			},
 			want:    &TestInt32StructPtrBadDefMin{},
 			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := sanitizeInt32Field(*s, reflect.ValueOf(tt.args.v).Elem(), tt.args.idx); (err != nil) != tt.wantErr {
+				t.Errorf("sanitizeInt32Field() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(tt.args.v, tt.want) {
+				t.Errorf("sanitizeInt32Field() - failed field - got %+v but wanted %+v", tt.args.v, tt.want)
+			}
+		})
+	}
+}
+
+func Test_sanitizeInt32Field_Slice(t *testing.T) {
+	s, _ := New()
+
+	type TestStrStructInt32Sli struct {
+		Field []int32 `san:"max=50,min=40"`
+	}
+	type TestStrStructInt32PtrSli struct {
+		Field []*int32 `san:"max=50,min=40"`
+	}
+	type TestStrStructInt32PtrSliDef struct {
+		Field []*int32 `san:"max=50,min=40,def=42"`
+	}
+	type TestStrStructInt32SliPtr struct {
+		Field *[]int32 `san:"max=50,min=40"`
+	}
+	type TestStrStructInt32PtrSliPtr struct {
+		Field *[]*int32 `san:"max=50,min=40"`
+	}
+	type TestStrStructInt32PtrSliPtrDef struct {
+		Field *[]*int32 `san:"max=50,min=40,def=42"`
+	}
+
+	// Each *string test has isolated arguments and results, since the
+	// arguments will be mutated, they should not be reused
+	argInt320 := int32(30)
+	resInt320 := int32(40)
+	argInt321 := int32(45)
+	resInt321 := int32(45)
+	argInt322 := int32(60)
+	resInt322 := int32(50)
+	resInt323 := int32(42)
+	argInt324 := int32(30)
+	resInt324 := int32(40)
+	argInt325 := int32(45)
+	resInt325 := int32(45)
+	argInt326 := int32(60)
+	resInt326 := int32(50)
+	resInt327 := int32(42)
+
+	type args struct {
+		v   interface{}
+		idx int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "Applies tags to a non-empty []int32 field.",
+			args: args{
+				v: &TestStrStructInt32Sli{
+					Field: []int32{
+						30,
+						45,
+						60,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32Sli{
+				Field: []int32{
+					40,
+					45,
+					50,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to an empty []int32 field.",
+			args: args{
+				v:   &TestStrStructInt32Sli{},
+				idx: 0,
+			},
+			want:    &TestStrStructInt32Sli{},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty []*int32 field.",
+			args: args{
+				v: &TestStrStructInt32PtrSli{
+					Field: []*int32{
+						&argInt320,
+						&argInt321,
+						&argInt322,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32PtrSli{
+				Field: []*int32{
+					&resInt320,
+					&resInt321,
+					&resInt322,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty []*int32 field.",
+			args: args{
+				v: &TestStrStructInt32PtrSli{
+					Field: []*int32{
+						nil,
+						nil,
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32PtrSli{
+				Field: []*int32{
+					nil,
+					nil,
+					nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags (with default) to a non-empty []*int32 field.",
+			args: args{
+				v: &TestStrStructInt32PtrSliDef{
+					Field: []*int32{
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32PtrSliDef{
+				Field: []*int32{
+					&resInt323,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]int32 field.",
+			args: args{
+				v: &TestStrStructInt32SliPtr{
+					Field: &[]int32{
+						30,
+						45,
+						60,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32SliPtr{
+				Field: &[]int32{
+					40,
+					45,
+					50,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to an empty *[]int32 field.",
+			args: args{
+				v:   &TestStrStructInt32SliPtr{},
+				idx: 0,
+			},
+			want:    &TestStrStructInt32SliPtr{},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]*int32 field.",
+			args: args{
+				v: &TestStrStructInt32PtrSliPtr{
+					Field: &[]*int32{
+						&argInt324,
+						&argInt325,
+						&argInt326,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32PtrSliPtr{
+				Field: &[]*int32{
+					&resInt324,
+					&resInt325,
+					&resInt326,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]*int32 field.",
+			args: args{
+				v: &TestStrStructInt32PtrSliPtr{
+					Field: &[]*int32{
+						nil,
+						nil,
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32PtrSliPtr{
+				Field: &[]*int32{
+					nil,
+					nil,
+					nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags (with default) to a non-empty *[]*int32 field.",
+			args: args{
+				v: &TestStrStructInt32PtrSliPtrDef{
+					Field: &[]*int32{
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructInt32PtrSliPtrDef{
+				Field: &[]*int32{
+					&resInt327,
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
