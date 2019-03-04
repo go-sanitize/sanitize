@@ -5,14 +5,28 @@ import (
 	"reflect"
 )
 
-// sanitizeUintField sanitizes an Uint field. Requires the whole
+// sanitizeUintField sanitizes a uint field. Requires the whole
 // reflect.Value for the struct because it needs access to both the Value and
 // Type of the struct.
 func sanitizeUintField(s Sanitizer, structValue reflect.Value, idx int) error {
 	fieldValue := structValue.Field(idx)
-	isPtr := fieldValue.Kind() == reflect.Ptr
 
 	tags := s.fieldTags(structValue.Type().Field(idx).Tag)
+
+	if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
+		fieldValue = fieldValue.Elem()
+	}
+
+	isSlice := fieldValue.Kind() == reflect.Slice
+
+	var fields []reflect.Value
+	if !isSlice {
+		fields = []reflect.Value{fieldValue}
+	} else {
+		for i := 0; i < fieldValue.Len(); i++ {
+			fields = append(fields, fieldValue.Index(i))
+		}
+	}
 
 	var err error
 
@@ -39,14 +53,14 @@ func sanitizeUintField(s Sanitizer, structValue reflect.Value, idx int) error {
 	// Checking if minimum is not higher than maximum
 	if hasMax && hasMin && max < min {
 		return fmt.Errorf(
-			"max less than min on Uint field '%s' during struct sanitization",
+			"max less than min on uint field '%s' during struct sanitization",
 			fieldValue.Type().Name(),
 		)
 	}
 	// Checking if minimum and maximum are above 0
 	if (hasMin && min < 0) || (hasMax && max < 0) {
 		return fmt.Errorf(
-			"min and max on Uint field '%s' can not be below 0",
+			"min and max on uint field '%s' can not be below 0",
 			fieldValue.Type().Name(),
 		)
 	}
@@ -79,28 +93,37 @@ func sanitizeUintField(s Sanitizer, structValue reflect.Value, idx int) error {
 		}
 	}
 
-	// PoUinter, nil, and we have a default: set it
-	if isPtr && fieldValue.IsNil() && hasDef {
-		fieldValue.Set(reflect.ValueOf(&def))
-		return nil
-	}
+	for _, field := range fields {
+		isPtr := field.Kind() == reflect.Ptr
 
-	// Not nil poUinter. Dereference then continue as normal
-	if isPtr && !fieldValue.IsNil() {
-		fieldValue = fieldValue.Elem()
-	}
-
-	// Apply min and max transforms
-	if hasMin {
-		oldNum := uint(fieldValue.Uint())
-		if min > oldNum {
-			fieldValue.SetUint(uint64(min))
+		// Pointer, nil, and we have a default: set it
+		if isPtr && field.IsNil() && hasDef {
+			field.Set(reflect.ValueOf(&def))
+			return nil
 		}
-	}
-	if hasMax {
-		oldNum := uint(fieldValue.Uint())
-		if max < oldNum {
-			fieldValue.SetUint(uint64(max))
+
+		// Pointer, nil, and no default
+		if isPtr && field.IsNil() && !hasDef {
+			return nil
+		}
+
+		// Not nil pointer. Dereference then continue as normal
+		if isPtr && !field.IsNil() {
+			field = field.Elem()
+		}
+
+		// Apply min and max transforms
+		if hasMin {
+			oldNum := field.Uint()
+			if min > uint(oldNum) {
+				field.SetUint(uint64(min))
+			}
+		}
+		if hasMax {
+			oldNum := field.Uint()
+			if max < uint(oldNum) {
+				field.SetUint(uint64(max))
+			}
 		}
 	}
 

@@ -10,9 +10,23 @@ import (
 // Type of the struct.
 func sanitizeFloat64Field(s Sanitizer, structValue reflect.Value, idx int) error {
 	fieldValue := structValue.Field(idx)
-	isPtr := fieldValue.Kind() == reflect.Ptr
 
 	tags := s.fieldTags(structValue.Type().Field(idx).Tag)
+
+	if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
+		fieldValue = fieldValue.Elem()
+	}
+
+	isSlice := fieldValue.Kind() == reflect.Slice
+
+	var fields []reflect.Value
+	if !isSlice {
+		fields = []reflect.Value{fieldValue}
+	} else {
+		for i := 0; i < fieldValue.Len(); i++ {
+			fields = append(fields, fieldValue.Index(i))
+		}
+	}
 
 	var err error
 
@@ -79,28 +93,37 @@ func sanitizeFloat64Field(s Sanitizer, structValue reflect.Value, idx int) error
 		}
 	}
 
-	// Pointer, nil, and we have a default: set it
-	if isPtr && fieldValue.IsNil() && hasDef {
-		fieldValue.Set(reflect.ValueOf(&def))
-		return nil
-	}
+	for _, field := range fields {
+		isPtr := field.Kind() == reflect.Ptr
 
-	// Not nil pointer. Dereference then continue as normal
-	if isPtr && !fieldValue.IsNil() {
-		fieldValue = fieldValue.Elem()
-	}
-
-	// Apply min and max transforms
-	if hasMin {
-		oldNum := fieldValue.Float()
-		if min > oldNum {
-			fieldValue.SetFloat(min)
+		// Pointer, nil, and we have a default: set it
+		if isPtr && field.IsNil() && hasDef {
+			field.Set(reflect.ValueOf(&def))
+			return nil
 		}
-	}
-	if hasMax {
-		oldNum := fieldValue.Float()
-		if max < oldNum {
-			fieldValue.SetFloat(max)
+
+		// Pointer, nil, and no default
+		if isPtr && field.IsNil() && !hasDef {
+			return nil
+		}
+
+		// Not nil pointer. Dereference then continue as normal
+		if isPtr && !field.IsNil() {
+			field = field.Elem()
+		}
+
+		// Apply min and max transforms
+		if hasMin {
+			oldNum := field.Float()
+			if min > oldNum {
+				field.SetFloat(min)
+			}
+		}
+		if hasMax {
+			oldNum := field.Float()
+			if max < oldNum {
+				field.SetFloat(max)
+			}
 		}
 	}
 
