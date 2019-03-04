@@ -30,6 +30,9 @@ func Test_sanitizeFloat64Field(t *testing.T) {
 		Field float64 `san:"def=43.3"`
 	}
 	type TestFloat64StructPtr struct {
+		Field *float64 `san:"max=42.2,min=41.1"`
+	}
+	type TestFloat64StructPtrDef struct {
 		Field *float64 `san:"max=42.2,min=41.1,def=41.1"`
 	}
 	type TestFloat64StructPtrBadDefMax struct {
@@ -159,20 +162,7 @@ func Test_sanitizeFloat64Field(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Caps an *float64 field on a struct with the san:max tag.",
-			args: args{
-				v: &TestFloat64StructPtr{
-					Field: &argInt0,
-				},
-				idx: 0,
-			},
-			want: &TestFloat64StructPtr{
-				Field: &resInt0,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Puts a default value for a *float64 field that was nil on a struct with the tag.",
+			name: "Ignores a nil *float64 field that was nil on a struct without a def tag.",
 			args: args{
 				v: &TestFloat64StructPtr{
 					Field: nil,
@@ -180,6 +170,32 @@ func Test_sanitizeFloat64Field(t *testing.T) {
 				idx: 0,
 			},
 			want: &TestFloat64StructPtr{
+				Field: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Caps an *float64 field on a struct with the san:max tag.",
+			args: args{
+				v: &TestFloat64StructPtrDef{
+					Field: &argInt0,
+				},
+				idx: 0,
+			},
+			want: &TestFloat64StructPtrDef{
+				Field: &resInt0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Puts a default value for a *float64 field that was nil on a struct with the tag.",
+			args: args{
+				v: &TestFloat64StructPtrDef{
+					Field: nil,
+				},
+				idx: 0,
+			},
+			want: &TestFloat64StructPtrDef{
 				Field: &resInt1,
 			},
 			wantErr: false,
@@ -218,6 +234,246 @@ func Test_sanitizeFloat64Field(t *testing.T) {
 			},
 			want:    &TestFloat64StructPtrBadDefMin{},
 			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := sanitizeFloat64Field(*s, reflect.ValueOf(tt.args.v).Elem(), tt.args.idx); (err != nil) != tt.wantErr {
+				t.Errorf("sanitizeFloat64Field() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(tt.args.v, tt.want) {
+				t.Errorf("sanitizeFloat64Field() - failed field - got %+v but wanted %+v", tt.args.v, tt.want)
+			}
+		})
+	}
+}
+
+func Test_sanitizeFloat64Field_Slice(t *testing.T) {
+	s, _ := New()
+
+	type TestStrStructFloat64Sli struct {
+		Field []float64 `san:"max=50,min=40"`
+	}
+	type TestStrStructFloat64PtrSli struct {
+		Field []*float64 `san:"max=50,min=40"`
+	}
+	type TestStrStructFloat64PtrSliDef struct {
+		Field []*float64 `san:"max=50,min=40,def=42"`
+	}
+	type TestStrStructFloat64SliPtr struct {
+		Field *[]float64 `san:"max=50,min=40"`
+	}
+	type TestStrStructFloat64PtrSliPtr struct {
+		Field *[]*float64 `san:"max=50,min=40"`
+	}
+	type TestStrStructFloat64PtrSliPtrDef struct {
+		Field *[]*float64 `san:"max=50,min=40,def=42"`
+	}
+
+	// Each *string test has isolated arguments and results, since the
+	// arguments will be mutated, they should not be reused
+	argFloat0 := 30.0
+	resFloat0 := 40.0
+	argFloat1 := 45.0
+	resFloat1 := 45.0
+	argFloat2 := 60.0
+	resFloat2 := 50.0
+	resFloat3 := 42.0
+	argFloat4 := 30.0
+	resFloat4 := 40.0
+	argFloat5 := 45.0
+	resFloat5 := 45.0
+	argFloat6 := 60.0
+	resFloat6 := 50.0
+	resFloat7 := 42.0
+
+	type args struct {
+		v   interface{}
+		idx int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "Applies tags to a non-empty []float64 field.",
+			args: args{
+				v: &TestStrStructFloat64Sli{
+					Field: []float64{
+						30,
+						45,
+						60,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64Sli{
+				Field: []float64{
+					40,
+					45,
+					50,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to an empty []float64 field.",
+			args: args{
+				v:   &TestStrStructFloat64Sli{},
+				idx: 0,
+			},
+			want:    &TestStrStructFloat64Sli{},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty []*float64 field.",
+			args: args{
+				v: &TestStrStructFloat64PtrSli{
+					Field: []*float64{
+						&argFloat0,
+						&argFloat1,
+						&argFloat2,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64PtrSli{
+				Field: []*float64{
+					&resFloat0,
+					&resFloat1,
+					&resFloat2,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty []*float64 field.",
+			args: args{
+				v: &TestStrStructFloat64PtrSli{
+					Field: []*float64{
+						nil,
+						nil,
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64PtrSli{
+				Field: []*float64{
+					nil,
+					nil,
+					nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags (with default) to a non-empty []*float64 field.",
+			args: args{
+				v: &TestStrStructFloat64PtrSliDef{
+					Field: []*float64{
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64PtrSliDef{
+				Field: []*float64{
+					&resFloat3,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]float64 field.",
+			args: args{
+				v: &TestStrStructFloat64SliPtr{
+					Field: &[]float64{
+						30,
+						45,
+						60,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64SliPtr{
+				Field: &[]float64{
+					40,
+					45,
+					50,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to an empty *[]float64 field.",
+			args: args{
+				v:   &TestStrStructFloat64SliPtr{},
+				idx: 0,
+			},
+			want:    &TestStrStructFloat64SliPtr{},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]*float64 field.",
+			args: args{
+				v: &TestStrStructFloat64PtrSliPtr{
+					Field: &[]*float64{
+						&argFloat4,
+						&argFloat5,
+						&argFloat6,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64PtrSliPtr{
+				Field: &[]*float64{
+					&resFloat4,
+					&resFloat5,
+					&resFloat6,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]*float64 field.",
+			args: args{
+				v: &TestStrStructFloat64PtrSliPtr{
+					Field: &[]*float64{
+						nil,
+						nil,
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64PtrSliPtr{
+				Field: &[]*float64{
+					nil,
+					nil,
+					nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags (with default) to a non-empty *[]*float64 field.",
+			args: args{
+				v: &TestStrStructFloat64PtrSliPtrDef{
+					Field: &[]*float64{
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructFloat64PtrSliPtrDef{
+				Field: &[]*float64{
+					&resFloat7,
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
