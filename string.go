@@ -14,9 +14,7 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 
 	tags := s.fieldTags(structValue.Type().Field(idx).Tag)
 
-	if fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil() {
-		return nil
-	} else if fieldValue.Kind() == reflect.Ptr {
+	if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
 		fieldValue = fieldValue.Elem()
 	}
 
