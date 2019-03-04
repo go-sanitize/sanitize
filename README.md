@@ -65,3 +65,8 @@ Available for: *int*, *int8*, *int16*, *int32*, *int64*, *uint*, *uint8*, *uint1
 ### bool
 
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
+
+
+### slices
+
+Tags will be applied for every element in the slice, not the slice itself. For example: a field of type `[]string` with the tag `max=5` will have every string truncated to 5 characters at most.

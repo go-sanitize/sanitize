@@ -11,60 +11,79 @@ import (
 // Type of the struct.
 func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 	fieldValue := structValue.Field(idx)
-	isPtr := fieldValue.Kind() == reflect.Ptr
 
 	tags := s.fieldTags(structValue.Type().Field(idx).Tag)
 
-	if isPtr && fieldValue.IsNil() {
-		// Only handle "def" if it is present, then finish san.
-		if _, ok := tags["def"]; ok {
-			defStr := tags["def"]
-			fieldValue.Set(reflect.ValueOf(&defStr))
-		}
-
+	if fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil() {
 		return nil
-	}
-
-	if isPtr && !fieldValue.IsNil() {
-		// Dereference then continue as normal.
+	} else if fieldValue.Kind() == reflect.Ptr {
 		fieldValue = fieldValue.Elem()
 	}
 
-	// Trim must happen first, no matter what other components there are.
-	if _, ok := tags["trim"]; ok {
-		// Ignore value of this component, we don't care *how* to trim,
-		// we just trim.
-		oldStr := fieldValue.String()
-		fieldValue.SetString(strings.Trim(oldStr, " "))
-	}
+	isSlice := fieldValue.Kind() == reflect.Slice
 
-	// Apply rest of transforms
-	if _, ok := tags["max"]; ok {
-		max, err := strconv.ParseInt(tags["max"], 10, 32)
-		if err != nil {
-			return err
-		}
-		oldStr := fieldValue.String()
-		if max < int64(len(oldStr)) {
-			fieldValue.SetString(oldStr[0:max])
+	var fields []reflect.Value
+	if !isSlice {
+		fields = []reflect.Value{fieldValue}
+	} else {
+		for i := 0; i < fieldValue.Len(); i++ {
+			fields = append(fields, fieldValue.Index(i))
 		}
 	}
 
-	if _, ok := tags["lower"]; ok {
-		oldStr := fieldValue.String()
-		fieldValue.SetString(strings.ToLower(oldStr))
-	}
-	if _, ok := tags["upper"]; ok {
-		oldStr := fieldValue.String()
-		fieldValue.SetString(strings.ToUpper(oldStr))
-	}
-	if _, ok := tags["title"]; ok {
-		oldStr := fieldValue.String()
-		fieldValue.SetString(toTitle(oldStr))
-	}
-	if _, ok := tags["cap"]; ok {
-		oldStr := fieldValue.String()
-		fieldValue.SetString(toCap(oldStr))
+	for _, field := range fields {
+		isPtr := field.Kind() == reflect.Ptr
+		if isPtr && field.IsNil() {
+			// Only handle "def" if it is present, then finish san.
+			if _, ok := tags["def"]; ok {
+				defStr := tags["def"]
+				field.Set(reflect.ValueOf(&defStr))
+			}
+
+			return nil
+		}
+
+		if isPtr && !field.IsNil() {
+			// Dereference then continue as normal.
+			field = field.Elem()
+		}
+
+		// Trim must happen first, no matter what other components there are.
+		if _, ok := tags["trim"]; ok {
+			// Ignore value of this component, we don't care *how* to trim,
+			// we just trim.
+			oldStr := field.String()
+			field.SetString(strings.Trim(oldStr, " "))
+		}
+
+		// Apply rest of transforms
+		if _, ok := tags["max"]; ok {
+			max, err := strconv.ParseInt(tags["max"], 10, 32)
+			if err != nil {
+				return err
+			}
+			oldStr := field.String()
+			if max < int64(len(oldStr)) {
+				field.SetString(oldStr[0:max])
+			}
+		}
+
+		if _, ok := tags["lower"]; ok {
+			oldStr := field.String()
+			field.SetString(strings.ToLower(oldStr))
+		}
+		if _, ok := tags["upper"]; ok {
+			oldStr := field.String()
+			field.SetString(strings.ToUpper(oldStr))
+		}
+		if _, ok := tags["title"]; ok {
+			oldStr := field.String()
+			field.SetString(toTitle(oldStr))
+		}
+		if _, ok := tags["cap"]; ok {
+			oldStr := field.String()
+			field.SetString(toCap(oldStr))
+		}
 	}
 
 	return nil
