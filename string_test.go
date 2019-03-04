@@ -369,6 +369,246 @@ func Test_sanitizeStrField(t *testing.T) {
 	}
 }
 
+func Test_sanitizeStrField_Slice(t *testing.T) {
+	s, _ := New()
+
+	type TestStrStructStrSli struct {
+		Field []string `san:"max=2,trim,lower"`
+	}
+	type TestStrStructStrPtrSli struct {
+		Field []*string `san:"max=2,trim,lower"`
+	}
+	type TestStrStructStrPtrSliDef struct {
+		Field []*string `san:"max=2,trim,lower,def=hello"`
+	}
+	type TestStrStructStrSliPtr struct {
+		Field *[]string `san:"max=2,trim,lower"`
+	}
+	type TestStrStructStrPtrSliPtr struct {
+		Field *[]*string `san:"max=2,trim,lower"`
+	}
+	type TestStrStructStrPtrSliPtrDef struct {
+		Field *[]*string `san:"max=2,trim,lower,def=hello"`
+	}
+
+	// Each *string test has isolated arguments and results, since the
+	// arguments will be mutated, they should not be reused
+	argString0 := " tEst "
+	resString0 := "te"
+	argString1 := " test "
+	resString1 := "te"
+	argString2 := " TEST "
+	resString2 := "te"
+	resString3 := "hello"
+	argString4 := " tEst "
+	resString4 := "te"
+	argString5 := " test "
+	resString5 := "te"
+	argString6 := " TEST "
+	resString6 := "te"
+	resString7 := "hello"
+
+	type args struct {
+		v   interface{}
+		idx int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "Applies tags to a non-empty []string field.",
+			args: args{
+				v: &TestStrStructStrSli{
+					Field: []string{
+						" tEst ",
+						" test ",
+						" TEST ",
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrSli{
+				Field: []string{
+					"te",
+					"te",
+					"te",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to an empty []string field.",
+			args: args{
+				v:   &TestStrStructStrSli{},
+				idx: 0,
+			},
+			want:    &TestStrStructStrSli{},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty []*string field.",
+			args: args{
+				v: &TestStrStructStrPtrSli{
+					Field: []*string{
+						&argString0,
+						&argString1,
+						&argString2,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrPtrSli{
+				Field: []*string{
+					&resString0,
+					&resString1,
+					&resString2,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty []*string field.",
+			args: args{
+				v: &TestStrStructStrPtrSli{
+					Field: []*string{
+						nil,
+						nil,
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrPtrSli{
+				Field: []*string{
+					nil,
+					nil,
+					nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags (with default) to a non-empty []*string field.",
+			args: args{
+				v: &TestStrStructStrPtrSliDef{
+					Field: []*string{
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrPtrSliDef{
+				Field: []*string{
+					&resString3,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]string field.",
+			args: args{
+				v: &TestStrStructStrSliPtr{
+					Field: &[]string{
+						" tEst ",
+						" test ",
+						" TEST ",
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrSliPtr{
+				Field: &[]string{
+					"te",
+					"te",
+					"te",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to an empty *[]string field.",
+			args: args{
+				v:   &TestStrStructStrSliPtr{},
+				idx: 0,
+			},
+			want:    &TestStrStructStrSliPtr{},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]*string field.",
+			args: args{
+				v: &TestStrStructStrPtrSliPtr{
+					Field: &[]*string{
+						&argString4,
+						&argString5,
+						&argString6,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrPtrSliPtr{
+				Field: &[]*string{
+					&resString4,
+					&resString5,
+					&resString6,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags to a non-empty *[]*string field.",
+			args: args{
+				v: &TestStrStructStrPtrSliPtr{
+					Field: &[]*string{
+						nil,
+						nil,
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrPtrSliPtr{
+				Field: &[]*string{
+					nil,
+					nil,
+					nil,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Applies tags (with default) to a non-empty *[]*string field.",
+			args: args{
+				v: &TestStrStructStrPtrSliPtrDef{
+					Field: &[]*string{
+						nil,
+					},
+				},
+				idx: 0,
+			},
+			want: &TestStrStructStrPtrSliPtrDef{
+				Field: &[]*string{
+					&resString7,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := sanitizeStrField(*s, reflect.ValueOf(tt.args.v).Elem(), tt.args.idx); (err != nil) != tt.wantErr {
+				t.Errorf("sanitizeStrField() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(tt.args.v, tt.want) {
+				t.Errorf("sanitizeStrField() - failed field - got %+v but wanted %+v", tt.args.v, tt.want)
+			}
+		})
+	}
+}
+
 func Test_toTitle(t *testing.T) {
 	tests := []struct {
 		s    string
