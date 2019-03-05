@@ -58,34 +58,90 @@ func (s *Sanitizer) Sanitize(o interface{}) error {
 type fieldSanFn = func(s Sanitizer, structValue reflect.Value, idx int) error
 
 var fieldSanFns = map[string]fieldSanFn{
-	"string":   sanitizeStrField,
-	"*string":  sanitizeStrField,
-	"int":      sanitizeIntField,
-	"*int":     sanitizeIntField,
-	"int8":     sanitizeInt8Field,
-	"*int8":    sanitizeInt8Field,
-	"int16":    sanitizeInt16Field,
-	"*int16":   sanitizeInt16Field,
-	"int32":    sanitizeInt32Field,
-	"*int32":   sanitizeInt32Field,
-	"int64":    sanitizeInt64Field,
-	"*int64":   sanitizeInt64Field,
-	"uint":     sanitizeUintField,
-	"*uint":    sanitizeUintField,
-	"uint8":    sanitizeUint8Field,
-	"*uint8":   sanitizeUint8Field,
-	"uint16":   sanitizeUint16Field,
-	"*uint16":  sanitizeUint16Field,
-	"uint32":   sanitizeUint32Field,
-	"*uint32":  sanitizeUint32Field,
-	"uint64":   sanitizeUint64Field,
-	"*uint64":  sanitizeUint64Field,
-	"float32":  sanitizeFloat32Field,
-	"*float32": sanitizeFloat32Field,
-	"float64":  sanitizeFloat64Field,
-	"*float64": sanitizeFloat64Field,
-	"bool":     sanitizeBoolField,
-	"*bool":    sanitizeBoolField,
+	"string":      sanitizeStrField,
+	"[]string":    sanitizeStrField,
+	"*[]string":   sanitizeStrField,
+	"*string":     sanitizeStrField,
+	"[]*string":   sanitizeStrField,
+	"*[]*string":  sanitizeStrField,
+	"int":         sanitizeIntField,
+	"[]int":       sanitizeIntField,
+	"*[]int":      sanitizeIntField,
+	"*int":        sanitizeIntField,
+	"[]*int":      sanitizeIntField,
+	"*[]*int":     sanitizeIntField,
+	"int8":        sanitizeInt8Field,
+	"[]int8":      sanitizeInt8Field,
+	"*[]int8":     sanitizeInt8Field,
+	"*int8":       sanitizeInt8Field,
+	"[]*int8":     sanitizeInt8Field,
+	"*[]*int8":    sanitizeInt8Field,
+	"int16":       sanitizeInt16Field,
+	"[]int16":     sanitizeInt16Field,
+	"*[]int16":    sanitizeInt16Field,
+	"*int16":      sanitizeInt16Field,
+	"[]*int16":    sanitizeInt16Field,
+	"*[]*int16":   sanitizeInt16Field,
+	"int32":       sanitizeInt32Field,
+	"[]int32":     sanitizeInt32Field,
+	"*[]int32":    sanitizeInt32Field,
+	"*int32":      sanitizeInt32Field,
+	"[]*int32":    sanitizeInt32Field,
+	"*[]*int32":   sanitizeInt32Field,
+	"int64":       sanitizeInt64Field,
+	"[]int64":     sanitizeInt64Field,
+	"*[]int64":    sanitizeInt64Field,
+	"*int64":      sanitizeInt64Field,
+	"[]*int64":    sanitizeInt64Field,
+	"*[]*int64":   sanitizeInt64Field,
+	"uint":        sanitizeUintField,
+	"[]uint":      sanitizeUintField,
+	"*[]uint":     sanitizeUintField,
+	"*uint":       sanitizeUintField,
+	"[]*uint":     sanitizeUintField,
+	"*[]*uint":    sanitizeUintField,
+	"uint8":       sanitizeUint8Field,
+	"[]uint8":     sanitizeUint8Field,
+	"*[]uint8":    sanitizeUint8Field,
+	"*uint8":      sanitizeUint8Field,
+	"[]*uint8":    sanitizeUint8Field,
+	"*[]*uint8":   sanitizeUint8Field,
+	"uint16":      sanitizeUint16Field,
+	"[]uint16":    sanitizeUint16Field,
+	"*[]uint16":   sanitizeUint16Field,
+	"*uint16":     sanitizeUint16Field,
+	"[]*uint16":   sanitizeUint16Field,
+	"*[]*uint16":  sanitizeUint16Field,
+	"uint32":      sanitizeUint32Field,
+	"[]uint32":    sanitizeUint32Field,
+	"*[]uint32":   sanitizeUint32Field,
+	"*uint32":     sanitizeUint32Field,
+	"[]*uint32":   sanitizeUint32Field,
+	"*[]*uint32":  sanitizeUint32Field,
+	"uint64":      sanitizeUint64Field,
+	"[]uint64":    sanitizeUint64Field,
+	"*[]uint64":   sanitizeUint64Field,
+	"*uint64":     sanitizeUint64Field,
+	"[]*uint64":   sanitizeUint64Field,
+	"*[]*uint64":  sanitizeUint64Field,
+	"float32":     sanitizeFloat32Field,
+	"[]float32":   sanitizeFloat32Field,
+	"*[]float32":  sanitizeFloat32Field,
+	"*float32":    sanitizeFloat32Field,
+	"[]*float32":  sanitizeFloat32Field,
+	"*[]*float32": sanitizeFloat32Field,
+	"float64":     sanitizeFloat64Field,
+	"[]float64":   sanitizeFloat64Field,
+	"*[]float64":  sanitizeFloat64Field,
+	"*float64":    sanitizeFloat64Field,
+	"[]*float64":  sanitizeFloat64Field,
+	"*[]*float64": sanitizeFloat64Field,
+	"bool":        sanitizeBoolField,
+	"[]bool":      sanitizeBoolField,
+	"*[]bool":     sanitizeBoolField,
+	"*bool":       sanitizeBoolField,
+	"[]*bool":     sanitizeBoolField,
+	"*[]*bool":    sanitizeBoolField,
 }
 
 // Called during recursion, since during recursion we need reflect.Value
@@ -110,10 +166,33 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 		}
 
 		// If not struct, use other sanitization functions
-		ftype := field.Type()
-		if sanFn, ok := fieldSanFns[ftype.String()]; ok {
+		ftype := field.Type().String()
+		if sanFn, ok := fieldSanFns[ftype]; ok {
 			if err := sanFn(s, v, i); err != nil {
 				return err
+			}
+		} else {
+			// If the field is a slice, sanitize all members
+			isPtrToSlice := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Slice
+			t := field.Type().String()
+			fmt.Println(t)
+			if fkind == reflect.Slice || isPtrToSlice {
+				if isPtrToSlice {
+					field = field.Elem()
+				}
+				for i := 0; i < field.Len(); i++ {
+					f := field.Index(i)
+					if f.Kind() == reflect.Ptr {
+						f = f.Elem()
+					}
+					if f.Kind() != reflect.Struct {
+						continue
+					}
+					if err := s.sanitizeRec(f); err != nil {
+						return err
+					}
+				}
+				continue
 			}
 		}
 	}
