@@ -153,6 +153,14 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 		field := v.Field(i)
 		fkind := field.Kind()
 
+		// Do we have a special sanitization function for this type? If so, use it
+		ftype := field.Type().String()
+		if sanFn, ok := fieldSanFns[ftype]; ok {
+			if err := sanFn(s, v, i); err != nil {
+				return err
+			}
+		}
+
 		// If the field is a struct, sanitize it recursively
 		isPtrToStruct := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Struct
 		if fkind == reflect.Struct || isPtrToStruct {
@@ -165,35 +173,25 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 			continue
 		}
 
-		// If not struct, use other sanitization functions
-		ftype := field.Type().String()
-		if sanFn, ok := fieldSanFns[ftype]; ok {
-			if err := sanFn(s, v, i); err != nil {
-				return err
+		// If the field is a slice of structs, recurse through them
+		isPtrToSlice := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Slice
+		if fkind == reflect.Slice || isPtrToSlice {
+			if isPtrToSlice {
+				field = field.Elem()
 			}
-		} else {
-			// If the field is a slice, sanitize all members
-			isPtrToSlice := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Slice
-			t := field.Type().String()
-			fmt.Println(t)
-			if fkind == reflect.Slice || isPtrToSlice {
-				if isPtrToSlice {
-					field = field.Elem()
+			for i := 0; i < field.Len(); i++ {
+				f := field.Index(i)
+				if f.Kind() == reflect.Ptr {
+					f = f.Elem()
 				}
-				for i := 0; i < field.Len(); i++ {
-					f := field.Index(i)
-					if f.Kind() == reflect.Ptr {
-						f = f.Elem()
-					}
-					if f.Kind() != reflect.Struct {
-						continue
-					}
-					if err := s.sanitizeRec(f); err != nil {
-						return err
-					}
+				if f.Kind() != reflect.Struct {
+					continue
 				}
-				continue
+				if err := s.sanitizeRec(f); err != nil {
+					return err
+				}
 			}
+			continue
 		}
 	}
 

@@ -1,8 +1,6 @@
 package sanitize
 
 import (
-	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -581,10 +579,6 @@ func Test_Sanitize(t *testing.T) {
 			if err := s.Sanitize(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("Sanitize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			b1, _ := json.Marshal(tt.args.s)
-			b2, _ := json.Marshal(tt.want)
-			fmt.Println(string(b1))
-			fmt.Println(string(b2))
 			if !reflect.DeepEqual(tt.args.s, tt.want) {
 				t.Errorf("Sanitize() - got %+v but wanted %+v", tt.args.s, tt.want)
 			}
