@@ -3,9 +3,10 @@ package sanitize
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
-func Test_Sanitize_Simple(t *testing.T) {
+func Test_Sanitize_CodeSample(t *testing.T) {
 	type Dog struct {
 		Name  string  `san:"max=5,trim,lower"`
 		Breed *string `san:"def=unknown"`
@@ -41,6 +42,41 @@ func Test_Sanitize_Simple(t *testing.T) {
 			expected.Name,
 			expectedBreed,
 		)
+	}
+}
+
+func Test_Sanitize_Options(t *testing.T) {
+	type Dog struct {
+		Name            string `abcde:"max=5,trim,lower"`
+		Birthday        string `abcde:"date"`
+		PersonalWebsite string `abcde:"xss,trim"`
+	}
+
+	now := time.Now()
+
+	d := Dog{
+		Name:            "Borky Borkins",
+		Birthday:        now.Format(time.RFC3339),
+		PersonalWebsite: "<html>[head]1=1?;{/head}(/html)",
+	}
+
+	expected := Dog{
+		Name:            "borky",
+		Birthday:        now.Format(time.RFC850),
+		PersonalWebsite: "html head 1 1 /head /html",
+	}
+
+	s, _ := New(
+		OptionTagName{Value: "abcde"},
+		OptionDateFormat{
+			Input:  []string{time.RFC3339},
+			Output: time.RFC850,
+		},
+	)
+	s.Sanitize(&d)
+
+	if !reflect.DeepEqual(d, expected) {
+		t.Errorf("Sanitize() - got %+v but wanted %+v", d, expected)
 	}
 }
 

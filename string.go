@@ -2,8 +2,10 @@ package sanitize
 
 import (
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // sanitizeStrField sanitizes a string field. Requires the whole
@@ -46,7 +48,14 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 			field = field.Elem()
 		}
 
-		// Trim must happen first, no matter what other components there are.
+		// Let's strip out invalid characters before anything else
+		if _, ok := tags["xss"]; ok {
+			oldStr := field.String()
+			field.SetString(xss(oldStr))
+		}
+
+		// Trim must happen before the other tags, no matter what other
+		// components there are.
 		if _, ok := tags["trim"]; ok {
 			// Ignore value of this component, we don't care *how* to trim,
 			// we just trim.
@@ -55,6 +64,10 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 		}
 
 		// Apply rest of transforms
+		if _, ok := tags["date"]; ok {
+			oldStr := field.String()
+			field.SetString(date(s.dateInput, s.dateKeepFormat, s.dateOutput, oldStr))
+		}
 		if _, ok := tags["max"]; ok {
 			max, err := strconv.ParseInt(tags["max"], 10, 32)
 			if err != nil {
@@ -65,7 +78,6 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 				field.SetString(oldStr[0:max])
 			}
 		}
-
 		if _, ok := tags["lower"]; ok {
 			oldStr := field.String()
 			field.SetString(strings.ToLower(oldStr))
@@ -131,4 +143,28 @@ func toCap(s string) string {
 		}
 	}
 	return string(b)
+}
+
+var replaceWhitespaces = regexp.MustCompile(`\s\s+`)
+var blacklistStripping = regexp.MustCompile(`[\p{Me}\p{C}<>=;(){}\[\]?]`)
+
+func xss(s string) string {
+	s = blacklistStripping.ReplaceAllString(s, " ")
+	s = replaceWhitespaces.ReplaceAllString(s, " ")
+	return s
+}
+
+func date(in []string, keepFormat bool, out, v string) string {
+	for _, f := range in {
+		t, err := time.Parse(f, v)
+		if err != nil {
+			continue
+		}
+		outf := f
+		if !keepFormat {
+			outf = out
+		}
+		return t.Format(outf)
+	}
+	return ""
 }
