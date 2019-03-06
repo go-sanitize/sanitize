@@ -3,6 +3,7 @@ package sanitize
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func Test_sanitizeStrField(t *testing.T) {
@@ -658,6 +659,151 @@ func Test_toCap(t *testing.T) {
 		t.Run(tt.s, func(t *testing.T) {
 			if got := toCap(tt.s); got != tt.want {
 				t.Errorf("toCap() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_xss(t *testing.T) {
+	tests := []struct {
+		name string
+		s    string
+		want string
+	}{
+		{
+			name: "empty string",
+			s:    "",
+			want: "",
+		},
+		{
+			name: "regular string",
+			s:    "this is a normal string",
+			want: "this is a normal string",
+		},
+		{
+			name: "should replace whitespace combinations with a single whitespace",
+			s:    " too  many\t\nwhite   spaces ",
+			want: " too many white spaces ",
+		},
+		{
+			name: "should remove ()<>[]{} brackets and =;? symbols",
+			s:    "no < > ( ) { } [ ] brackets = or ; strange ? symbols",
+			want: "no brackets or strange symbols",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := xss(tt.s); got != tt.want {
+				t.Errorf("xss() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_date(t *testing.T) {
+	d3339 := time.Now().Format(time.RFC3339)
+	d1123 := time.Now().Format(time.RFC1123)
+	d850 := time.Now().Format(time.RFC850)
+
+	type args struct {
+		in         []string
+		keepFormat bool
+		out        string
+		v          string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "invalid date",
+			args: args{
+				in: []string{
+					time.RFC1123,
+					time.RFC822,
+				},
+				v: "i dont think this is a date",
+			},
+			want: "",
+		},
+		{
+			name: "valid date, but no input",
+			args: args{
+				v: d3339,
+			},
+			want: "",
+		},
+		{
+			name: "valid date, but wrong input",
+			args: args{
+				in: []string{
+					time.RFC1123,
+					time.RFC822,
+				},
+				v: d3339,
+			},
+			want: "",
+		},
+		{
+			name: "format recognized and replaced (1st format)",
+			args: args{
+				in: []string{
+					time.RFC1123,
+					time.RFC822,
+					time.RFC850,
+				},
+				out: time.RFC3339,
+				v:   d1123,
+			},
+			want: d3339,
+		},
+		{
+			name: "format recognized and replaced (3rd format)",
+			args: args{
+				in: []string{
+					time.RFC1123,
+					time.RFC822,
+					time.RFC850,
+				},
+				out: time.RFC3339,
+				v:   d850,
+			},
+			want: d3339,
+		},
+		{
+			name: "format recognized but not replaced (1st format)",
+			args: args{
+				in: []string{
+					time.RFC1123,
+					time.RFC822,
+					time.RFC850,
+				},
+				keepFormat: true,
+				out:        time.RFC3339,
+				v:          d1123,
+			},
+			want: d1123,
+		},
+		{
+			name: "format recognized but not replaced (3rd format)",
+			args: args{
+				in: []string{
+					time.RFC1123,
+					time.RFC822,
+					time.RFC850,
+				},
+				keepFormat: true,
+				out:        time.RFC3339,
+				v:          d850,
+			},
+			want: d850,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := date(tt.args.in, tt.args.keepFormat, tt.args.out, tt.args.v); got != tt.want {
+				t.Errorf("date() = %v, want %v", got, tt.want)
 			}
 		})
 	}

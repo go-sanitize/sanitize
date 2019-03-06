@@ -13,7 +13,10 @@ const DefaultTagName = "san"
 
 // Sanitizer intance
 type Sanitizer struct {
-	tagName string
+	tagName        string
+	dateInput      []string
+	dateKeepFormat bool
+	dateOutput     string
 }
 
 // New sanitizer instance
@@ -24,13 +27,18 @@ func New(options ...Option) (*Sanitizer, error) {
 	for _, o := range options {
 		switch o.id() {
 		case optionTagNameID:
-			v := o.value()
+			v := o.value().(string)
 			if len(v) < 1 || len(v) > 10 {
 				return nil, fmt.Errorf("tag name %q must be between 1 and 10 characters", v)
 			}
 			s.tagName = v
+		case optionDateFormatID:
+			v := o.value().(OptionDateFormat)
+			s.dateInput = v.Input
+			s.dateKeepFormat = v.KeepFormat
+			s.dateOutput = v.Output
 		default:
-			return nil, fmt.Errorf("tag name %q is not valid", o.value())
+			return nil, fmt.Errorf("option %q is not valid", o.id())
 		}
 	}
 	return s, nil

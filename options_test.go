@@ -13,7 +13,7 @@ func (o unknownOption) id() string {
 	return "strangetag!"
 }
 
-func (o unknownOption) value() string {
+func (o unknownOption) value() interface{} {
 	return "very strange indeed"
 }
 
