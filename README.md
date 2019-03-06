@@ -97,7 +97,7 @@ s := sanitizer.New(sanitizer.OptionDateFormat{
 1. **xss** - Will remove brackets such as <>[](){} and the characters !=? from the string
 1. **date** - Will parse the string using the input formats provided in the options and print it using the output format provided in the options. If the string can not be parsed, it will be left empty.
 
-The order of precedence will be: **trim** -> **max** -> **lower**
+The order of precedence will be: **xss** -> **trim** -> **date** -> **max** -> **lower** -> **upper** -> **title** -> **cap**
 
 
 ### int, uint, and float
