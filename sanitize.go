@@ -161,6 +161,15 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 		field := v.Field(i)
 		fkind := field.Kind()
 
+		// If the field is a slice, sanitize it first
+		isPtrToSlice := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Slice
+		isSlice := fkind == reflect.Slice
+		if isSlice || isPtrToSlice {
+			if err := sanitizeSliceField(s, v, i); err != nil {
+				return err
+			}
+		}
+
 		// Do we have a special sanitization function for this type? If so, use it
 		ftype := field.Type().String()
 		if sanFn, ok := fieldSanFns[ftype]; ok {
@@ -182,8 +191,7 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 		}
 
 		// If the field is a slice of structs, recurse through them
-		isPtrToSlice := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Slice
-		if fkind == reflect.Slice || isPtrToSlice {
+		if isSlice || isPtrToSlice {
 			if isPtrToSlice {
 				field = field.Elem()
 			}

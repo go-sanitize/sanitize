@@ -116,4 +116,6 @@ Available for: *int*, *int8*, *int16*, *int32*, *int64*, *uint*, *uint8*, *uint1
 
 ### slices
 
-Tags will be applied for every element in the slice, not the slice itself. For example: a field of type `[]string` with the tag `max=5` will have every string truncated to 5 characters at most.
+1. **maxsize=`<n>`** - Maximum slice length. It will truncate the slice to `<n>` elements if the limit is exceeded
+
+Other tags will be applied for every element in the slice, not the slice itself. For example: a field of type `[]string` with the tag `max=5` will have every string truncated to 5 characters at most.

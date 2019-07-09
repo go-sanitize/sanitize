@@ -621,3 +621,214 @@ func Test_Sanitize(t *testing.T) {
 		})
 	}
 }
+
+func Test_SliceSanitize(t *testing.T) {
+
+	type TestStruct struct {
+		SlcFloat32Field       []float32   `san:"maxsize=2"`
+		SlcStrField           []string    `san:"maxsize=2"`
+		SlcIntField           []int       `san:"maxsize=2"`
+		SlcBoolField          []bool      `san:"maxsize=2"`
+		SlcFloat32PtrField    []*float32  `san:"maxsize=2"`
+		SlcStrPtrField        []*string   `san:"maxsize=2"`
+		SlcIntPtrField        []*int      `san:"maxsize=2"`
+		SlcBoolPtrField       []*bool     `san:"maxsize=2"`
+		SlcPtrFloat32Field    *[]float32  `san:"maxsize=2"`
+		SlcPtrStrField        *[]string   `san:"maxsize=2"`
+		SlcPtrIntField        *[]int      `san:"maxsize=2"`
+		SlcPtrBoolField       *[]bool     `san:"maxsize=2"`
+		SlcPtrFloat32PtrField *[]*float32 `san:"maxsize=2"`
+		SlcPtrStrPtrField     *[]*string  `san:"maxsize=2"`
+		SlcPtrIntPtrField     *[]*int     `san:"maxsize=2"`
+		SlcPtrBoolPtrField    *[]*bool    `san:"maxsize=2"`
+	}
+
+	s, _ := New()
+
+	float1 := float32(1.1)
+	float2 := float32(2.2)
+	float3 := float32(3.3)
+	str1 := "test1"
+	str2 := "test2"
+	str3 := "test3"
+	int1 := 1
+	int2 := 2
+	int3 := 3
+	bool1 := true
+	bool2 := false
+
+	type args struct {
+		s interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    interface{}
+	}{
+		{
+			name: "Sanitizes a struct that contains many types of slices.",
+			args: args{
+				s: &TestStruct{
+					SlcFloat32Field: []float32{
+						float1,
+						float2,
+						float3,
+					},
+					SlcStrField: []string{
+						str1,
+						str2,
+						str3,
+					},
+					SlcIntField: []int{
+						int1,
+						int2,
+						int3,
+					},
+					SlcBoolField: []bool{
+						bool1,
+						bool2,
+						bool1,
+					},
+					SlcFloat32PtrField: []*float32{
+						&float1,
+						&float2,
+						&float3,
+					},
+					SlcStrPtrField: []*string{
+						&str1,
+						&str2,
+						&str3,
+					},
+					SlcIntPtrField: []*int{
+						&int1,
+						&int2,
+						&int3,
+					},
+					SlcBoolPtrField: []*bool{
+						&bool1,
+						&bool2,
+						&bool1,
+					},
+					SlcPtrFloat32Field: &[]float32{
+						float1,
+						float2,
+						float3,
+					},
+					SlcPtrStrField: &[]string{
+						str1,
+						str2,
+						str3,
+					},
+					SlcPtrIntField: &[]int{
+						int1,
+						int2,
+						int3,
+					},
+					SlcPtrBoolField: &[]bool{
+						bool1,
+						bool2,
+						bool1,
+					},
+					SlcPtrFloat32PtrField: &[]*float32{
+						&float1,
+						&float2,
+						&float3,
+					},
+					SlcPtrStrPtrField: &[]*string{
+						&str1,
+						&str2,
+						&str3,
+					},
+					SlcPtrIntPtrField: &[]*int{
+						&int1,
+						&int2,
+						&int3,
+					},
+					SlcPtrBoolPtrField: &[]*bool{
+						&bool1,
+						&bool2,
+						&bool1,
+					},
+				},
+			},
+			want: &TestStruct{
+				SlcFloat32Field: []float32{
+					float1,
+					float2,
+				},
+				SlcStrField: []string{
+					str1,
+					str2,
+				},
+				SlcIntField: []int{
+					int1,
+					int2,
+				},
+				SlcBoolField: []bool{
+					bool1,
+					bool2,
+				},
+				SlcFloat32PtrField: []*float32{
+					&float1,
+					&float2,
+				},
+				SlcStrPtrField: []*string{
+					&str1,
+					&str2,
+				},
+				SlcIntPtrField: []*int{
+					&int1,
+					&int2,
+				},
+				SlcBoolPtrField: []*bool{
+					&bool1,
+					&bool2,
+				},
+				SlcPtrFloat32Field: &[]float32{
+					float1,
+					float2,
+				},
+				SlcPtrStrField: &[]string{
+					str1,
+					str2,
+				},
+				SlcPtrIntField: &[]int{
+					int1,
+					int2,
+				},
+				SlcPtrBoolField: &[]bool{
+					bool1,
+					bool2,
+				},
+				SlcPtrFloat32PtrField: &[]*float32{
+					&float1,
+					&float2,
+				},
+				SlcPtrStrPtrField: &[]*string{
+					&str1,
+					&str2,
+				},
+				SlcPtrIntPtrField: &[]*int{
+					&int1,
+					&int2,
+				},
+				SlcPtrBoolPtrField: &[]*bool{
+					&bool1,
+					&bool2,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := s.Sanitize(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("Sanitize() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(tt.args.s, tt.want) {
+				t.Errorf("Sanitize() - got %+v but wanted %+v", tt.args.s, tt.want)
+			}
+		})
+	}
+}
+
