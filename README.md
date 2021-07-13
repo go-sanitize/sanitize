@@ -1,6 +1,6 @@
 # sanitize
 
-[![CircleCI](https://circleci.com/gh/go-sanitize/sanitize/tree/master.svg?style=svg)](https://circleci.com/gh/go-sanitize/sanitize/tree/master)
+[![Go](https://github.com/go-sanitize/sanitize/actions/workflows/go.yml/badge.svg)](https://github.com/go-sanitize/sanitize/actions/workflows/go.yml)
 
 Package sanitize provides an easy way to clean fields in structs: trimming, applying maximum string lengths, minimum numeric values, default values, and so on...
 
