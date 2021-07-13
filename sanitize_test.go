@@ -372,11 +372,11 @@ func Test_Sanitize(t *testing.T) {
 						},
 					},
 					SliPtrSubPtr1: &[]*TestStructMixedRecursiveSub{
-						&TestStructMixedRecursiveSub{
+						{
 							StrField:    " subtest1 ",
 							StrPtrField: &arg71,
 						},
-						&TestStructMixedRecursiveSub{
+						{
 							StrField:    " subtest2 ",
 							StrPtrField: &arg72,
 						},
@@ -487,11 +487,11 @@ func Test_Sanitize(t *testing.T) {
 					},
 				},
 				SliPtrSubPtr1: &[]*TestStructMixedRecursiveSub{
-					&TestStructMixedRecursiveSub{
+					{
 						StrField:    "su",
 						StrPtrField: &res71,
 					},
-					&TestStructMixedRecursiveSub{
+					{
 						StrField:    "su",
 						StrPtrField: &res72,
 					},
@@ -831,4 +831,3 @@ func Test_SliceSanitize(t *testing.T) {
 		})
 	}
 }
-
