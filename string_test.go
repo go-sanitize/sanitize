@@ -60,9 +60,6 @@ func Test_sanitizeStrField(t *testing.T) {
 	type TestStrStructPtrCap struct {
 		Field *string `san:"cap"`
 	}
-	type TestStrStructPtrDef struct {
-		Field *string `san:"def=et"`
-	}
 	type TestStrStructPtrTruncTrimLowerDef struct {
 		Field *string `san:"max=2,trim,lower,def=et"`
 	}
