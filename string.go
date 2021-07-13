@@ -100,23 +100,7 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 }
 
 func toTitle(s string) string {
-	b := make([]byte, len(s))
-	casediff := byte('a' - 'A')
-	inWord := false
-	for i := 0; i < len(s); i++ {
-		b[i] = s[i]
-		c := b[i]
-		isLower := c >= 'a' && c <= 'z'
-		isUpper := c >= 'A' && c <= 'Z'
-		if !inWord && isLower { // Not inside a word and it's lower case
-			b[i] -= casediff
-		}
-		if inWord && isUpper { // Inside a word and it's upper case
-			b[i] += casediff
-		}
-		inWord = isLower || isUpper
-	}
-	return string(b)
+	return strings.Title(strings.ToLower((s)))
 }
 
 func toCap(s string) string {

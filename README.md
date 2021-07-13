@@ -91,7 +91,7 @@ s := sanitizer.New(sanitizer.OptionDateFormat{
 1. **trim** - Remove trailing spaces left and right
 1. **lower** - Lowercase all characters in the string
 1. **upper** - Uppercase all characters in the string
-1. **title** - First character of every word is changed to uppercase, the rest to lowercase
+1. **title** - First character of every word is changed to uppercase, the rest to lowercase. Uses Go's built in `strings.Title()` function.
 1. **cap** - Only the first letter of the string will be changed to uppercase, the rest to lowercase
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
 1. **xss** - Will remove brackets such as <>[](){} and the characters !=? from the string

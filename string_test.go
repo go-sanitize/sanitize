@@ -83,6 +83,8 @@ func Test_sanitizeStrField(t *testing.T) {
 	resString7 := " Test Test Test Test "
 	argString8 := " tEst TeSt test TEST "
 	resString8 := " Test test test test "
+	argString9 := " hernández "
+	resString9 := " Hernández "
 
 	type args struct {
 		v   interface{}
@@ -325,6 +327,19 @@ func Test_sanitizeStrField(t *testing.T) {
 			},
 			want: &TestStrStructPtrCap{
 				Field: &resString8, // ' Test test test test '
+			},
+			wantErr: false,
+		},
+		{
+			name: "Title cases a *string field on a struct with the tag when the string has a character with a punctuation mark.",
+			args: args{
+				v: &TestStrStructPtrTitle{
+					Field: &argString9,
+				},
+				idx: 0,
+			},
+			want: &TestStrStructPtrTitle{
+				Field: &resString9,
 			},
 			wantErr: false,
 		},
