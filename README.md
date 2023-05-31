@@ -82,6 +82,41 @@ s := sanitizer.New(sanitizer.OptionDateFormat{
 })
 ```
 
+### Custom Sanitizers
+
+Use this option to register a custom sanitizer function. The sanitizer function is responsible for determining if the field's type is supported for that sanitizer.
+
+The `Name` field tells us what tag name corresponds to the sanitizer.
+
+The `Sanitizer` field tells us which sanitizer function to call when this tag is used. All sanitizers must have this signature: `func(s Sanitizer, structValue reflect.Value, idx int) error`.
+
+```go
+func exclaim(s Sanitizer, structValue reflect.Value, idx int) error {
+    fieldValue := structValue.Field(idx)
+    if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
+        fieldValue = fieldValue.Elem()
+    }
+
+    if fieldValue.Kind() != reflect.String {
+        return fmt.Errorf("exclaim: invalid type %q", fieldValue.Kind().String())
+    }
+
+    v := fieldValue.Interface().(string)
+    if strings.HasSuffix(v, "...") {
+        v = v[:len(v)-3] + "!"
+    } else if strings.HasSuffix(v, ".") {
+        v = v[:len(v)-1] + "!"
+    }
+    fieldValue.SetString(v)
+
+    return nil
+}
+
+s := sanitizer.New(sanitizer.OptionSanitizerFunc{
+    Name: "exclaim",
+	Sanitizer: exclaim,
+})
+```
 
 ## Available tags
 
