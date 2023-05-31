@@ -24,7 +24,7 @@ func (s Sanitizer) fieldTags(f reflect.StructTag) map[string]string {
 			m[kv[0]] = kv[1]
 		} else {
 			// Use directly. Ex. 'trim' without value
-			m[comp] = "_"
+			m[comp] = ""
 		}
 	}
 
