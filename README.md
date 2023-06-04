@@ -89,7 +89,7 @@ s := sanitizer.New(sanitizer.OptionDateFormat{
 
 1. **max=`<n>`** - Maximum string length. It will truncate the string to `<n>` characters if this limit is exceeded
 1. **trim** - Remove trailing spaces left and right
-1. **trim=`<c>`** - Remove trailing characters `<c>` left and right. You can provide more than one character. Example: `trim= \n` will trim whitespaces and new lines
+1. **trim=`<c>`** - Remove trailing characters `<c>` left and right. You can provide more than one character. Example: `trim= \n` will trim spaces and new lines
 1. **lower** - Lowercase all characters in the string
 1. **upper** - Uppercase all characters in the string
 1. **title** - First character of every word is changed to uppercase, the rest to lowercase. Uses Go's built in `strings.Title()` function.
