@@ -56,11 +56,12 @@ func sanitizeStrField(s Sanitizer, structValue reflect.Value, idx int) error {
 
 		// Trim must happen before the other tags, no matter what other
 		// components there are.
-		if _, ok := tags["trim"]; ok {
-			// Ignore value of this component, we don't care *how* to trim,
-			// we just trim.
+		if trimset, ok := tags["trim"]; ok {
+			if len(trimset) == 0 {
+				trimset = " "
+			}
 			oldStr := field.String()
-			field.SetString(strings.Trim(oldStr, " "))
+			field.SetString(strings.Trim(oldStr, trimset))
 		}
 
 		// Apply rest of transforms

@@ -89,13 +89,14 @@ s := sanitizer.New(sanitizer.OptionDateFormat{
 
 1. **max=`<n>`** - Maximum string length. It will truncate the string to `<n>` characters if this limit is exceeded
 1. **trim** - Remove trailing spaces left and right
+1. **trim=`<c>`** - Remove trailing characters `<c>` left and right. You can provide more than one character. Example: `trim= \n` will trim spaces and new lines
 1. **lower** - Lowercase all characters in the string
 1. **upper** - Uppercase all characters in the string
 1. **title** - First character of every word is changed to uppercase, the rest to lowercase. Uses Go's built in `strings.Title()` function.
 1. **cap** - Only the first letter of the string will be changed to uppercase, the rest to lowercase
 1. **def=`<n>`** (only available for pointers) - Sets a default `<n>` value in case the pointer is `nil`
 1. **xss** - Will remove brackets such as <>[](){} and the characters !=? from the string
-1. **date** - Will parse the string using the input formats provided in the options and print it using the output format provided in the options. If the string can not be parsed, it will be left empty.
+1. **date** - Will parse the string using the input formats provided in the options and print it using the output format provided in the options. If the string can not be parsed, it will be left empty
 
 The order of precedence will be: **xss** -> **trim** -> **date** -> **max** -> **lower** -> **upper** -> **title** -> **cap**
 

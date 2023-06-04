@@ -21,6 +21,9 @@ func Test_sanitizeStrField(t *testing.T) {
 	type TestStrStructTrim struct {
 		Field string `san:"trim"`
 	}
+	type TestStrStructTrimCustom struct {
+		Field string `san:"trim= \ns7"`
+	}
 	type TestStrStructLower struct {
 		Field string `san:"lower"`
 	}
@@ -47,6 +50,9 @@ func Test_sanitizeStrField(t *testing.T) {
 	}
 	type TestStrStructPtrTrim struct {
 		Field *string `san:"trim"`
+	}
+	type TestStrStructPtrTrimCustom struct {
+		Field *string `san:"trim= \ns7"`
 	}
 	type TestStrStructPtrLower struct {
 		Field *string `san:"lower"`
@@ -85,6 +91,8 @@ func Test_sanitizeStrField(t *testing.T) {
 	resString8 := " Test test test test "
 	argString9 := " hernández "
 	resString9 := " Hernández "
+	argString10 := "s7\n7s tEst  7s\n7s"
+	resString10 := "tEst"
 
 	type args struct {
 		v   interface{}
@@ -144,6 +152,19 @@ func Test_sanitizeStrField(t *testing.T) {
 				idx: 0,
 			},
 			want: &TestStrStructTrim{
+				Field: "tEst",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Trims a string field on a struct with the custom tag.",
+			args: args{
+				v: &TestStrStructTrimCustom{
+					Field: "s7\n7s tEst  7s\n7s",
+				},
+				idx: 0,
+			},
+			want: &TestStrStructTrimCustom{
 				Field: "tEst",
 			},
 			wantErr: false,
@@ -275,6 +296,19 @@ func Test_sanitizeStrField(t *testing.T) {
 			},
 			want: &TestStrStructPtrTrim{
 				Field: &resString2, // 'tEst'
+			},
+			wantErr: false,
+		},
+		{
+			name: "Trims a string field on a struct with the custom tag.",
+			args: args{
+				v: &TestStrStructPtrTrimCustom{
+					Field: &argString10,
+				},
+				idx: 0,
+			},
+			want: &TestStrStructPtrTrimCustom{
+				Field: &resString10,
 			},
 			wantErr: false,
 		},
