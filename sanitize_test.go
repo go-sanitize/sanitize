@@ -114,6 +114,40 @@ func Test_Sanitize_Options(t *testing.T) {
 	}
 }
 
+func Test_Sanitize_InvalidCustomSanitizerType(t *testing.T) {
+	type Dog struct {
+		Name    string `san:"max=5,trim,lower"`
+		Adopted bool   `san:"capfirst"`
+	}
+
+	d := Dog{
+		Name:    "Borky Borkins",
+		Adopted: true,
+	}
+
+	expected := Dog{
+		Name:    "borky",
+		Adopted: true,
+	}
+
+	s, _ := New(
+		OptionSanitizerFunc{
+			Name:      "capfirst",
+			Sanitizer: capFirst,
+		},
+	)
+
+	if err := s.Sanitize(&d); err == nil {
+		t.Fatal("Sanitize() - did not receive expected error")
+	} else if !strings.Contains(err.Error(), "capfirst: invalid type") {
+		t.Fatalf("Sanitize() - received unexpected error %v", err)
+	}
+
+	if !reflect.DeepEqual(d, expected) {
+		t.Errorf("Sanitize() - got %+v but wanted %+v", d, expected)
+	}
+}
+
 func Test_Sanitize(t *testing.T) {
 
 	type TestStruct struct {

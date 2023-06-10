@@ -177,7 +177,7 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 
 		// Prioritize custom sanitizers; tag's value can be re-resolved inside the sanitizer
 		tags := s.fieldTags(v.Type().Field(i).Tag)
-		for tag, _ := range tags {
+		for tag := range tags {
 			sanitizerFunc, ok := s.sanitizersByName[tag]
 			if !ok {
 				continue

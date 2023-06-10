@@ -91,6 +91,7 @@ The `Name` field tells us what tag name corresponds to the sanitizer.
 The `Sanitizer` field tells us which sanitizer function to call when this tag is used. All sanitizers must have this signature: `func(s Sanitizer, structValue reflect.Value, idx int) error`.
 
 ```go
+// exclaim adds punctuated enthusiasm to a string.
 func exclaim(s Sanitizer, structValue reflect.Value, idx int) error {
     fieldValue := structValue.Field(idx)
     if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
@@ -106,16 +107,38 @@ func exclaim(s Sanitizer, structValue reflect.Value, idx int) error {
         v = v[:len(v)-3] + "!"
     } else if strings.HasSuffix(v, ".") {
         v = v[:len(v)-1] + "!"
+    } else {
+        v += "!"
     }
+
     fieldValue.SetString(v)
 
     return nil
 }
 
-s := sanitizer.New(sanitizer.OptionSanitizerFunc{
-    Name: "exclaim",
-	Sanitizer: exclaim,
-})
+type BlogPost struct {
+    Title    string `san:"title"`
+    Byline   string `san:"cap,exclaim"`
+    Contents []byte
+}
+
+func main() {
+    bp := BlogPost{
+        Title:  "sanitizing go structs"
+        Byline: "clean up you structs"
+    }
+
+    s := sanitizer.New(
+        sanitizer.OptionSanitizerFunc{
+            Name:      "exclaim",
+            Sanitizer: exclaim,
+        },
+    )
+    s.Sanitize(&bp)
+
+    fmt.Printf("Title:%q Byline:%q", bp.Title, bp.Byline)
+    // Title: "Sanitizing Go Structs" Byline:"Clean up your structs!"
+}
 ```
 
 ## Available tags
