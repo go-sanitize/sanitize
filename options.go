@@ -43,3 +43,21 @@ func (o OptionDateFormat) id() string {
 func (o OptionDateFormat) value() interface{} {
 	return o
 }
+
+// OptionSanitizerFunc allows users to use custom sanitizer functions
+type OptionSanitizerFunc struct {
+	Name      string
+	Sanitizer SanitizerFunc
+}
+
+var _ Option = OptionSanitizerFunc{}
+
+const optionSanitizerFuncID = "sanitizer-func"
+
+func (o OptionSanitizerFunc) id() string {
+	return optionSanitizerFuncID
+}
+
+func (o OptionSanitizerFunc) value() interface{} {
+	return o.Sanitizer
+}

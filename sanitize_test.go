@@ -1,10 +1,34 @@
 package sanitize
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
+
+func capFirst(s Sanitizer, structValue reflect.Value, idx int) error {
+	fieldValue := structValue.Field(idx)
+
+	if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
+		fieldValue = fieldValue.Elem()
+	}
+
+	if fieldValue.Kind() != reflect.String {
+		return fmt.Errorf("capfirst: invalid type %q", fieldValue.Kind().String())
+	}
+
+	v := fieldValue.Interface().(string)
+
+	first := string(v[0])
+	first = strings.ToUpper(first)
+	v = first + v[1:]
+
+	fieldValue.SetString(v)
+
+	return nil
+}
 
 func Test_Sanitize_CodeSample(t *testing.T) {
 	type Dog struct {
@@ -50,6 +74,7 @@ func Test_Sanitize_Options(t *testing.T) {
 		Name            string `abcde:"max=5,trim,lower"`
 		Birthday        string `abcde:"date"`
 		PersonalWebsite string `abcde:"xss,trim"`
+		Breed           string `abcde:"capfirst"`
 	}
 
 	now := time.Now()
@@ -58,12 +83,14 @@ func Test_Sanitize_Options(t *testing.T) {
 		Name:            "Borky Borkins",
 		Birthday:        now.Format(time.RFC3339),
 		PersonalWebsite: "<html>[head]1=1?;{/head}(/html)",
+		Breed:           "frenchBulldog",
 	}
 
 	expected := Dog{
 		Name:            "borky",
 		Birthday:        now.Format(time.RFC850),
 		PersonalWebsite: "html head 1 1 /head /html",
+		Breed:           "FrenchBulldog",
 	}
 
 	s, _ := New(
@@ -72,8 +99,49 @@ func Test_Sanitize_Options(t *testing.T) {
 			Input:  []string{time.RFC3339},
 			Output: time.RFC850,
 		},
+		OptionSanitizerFunc{
+			Name:      "capfirst",
+			Sanitizer: capFirst,
+		},
 	)
-	s.Sanitize(&d)
+
+	if err := s.Sanitize(&d); err != nil {
+		t.Fatalf("Sanitize() - got unexpected error %v", err)
+	}
+
+	if !reflect.DeepEqual(d, expected) {
+		t.Errorf("Sanitize() - got %+v but wanted %+v", d, expected)
+	}
+}
+
+func Test_Sanitize_InvalidCustomSanitizerType(t *testing.T) {
+	type Dog struct {
+		Name    string `san:"max=5,trim,lower"`
+		Adopted bool   `san:"capfirst"`
+	}
+
+	d := Dog{
+		Name:    "Borky Borkins",
+		Adopted: true,
+	}
+
+	expected := Dog{
+		Name:    "borky",
+		Adopted: true,
+	}
+
+	s, _ := New(
+		OptionSanitizerFunc{
+			Name:      "capfirst",
+			Sanitizer: capFirst,
+		},
+	)
+
+	if err := s.Sanitize(&d); err == nil {
+		t.Fatal("Sanitize() - did not receive expected error")
+	} else if !strings.Contains(err.Error(), "capfirst: invalid type") {
+		t.Fatalf("Sanitize() - received unexpected error %v", err)
+	}
 
 	if !reflect.DeepEqual(d, expected) {
 		t.Errorf("Sanitize() - got %+v but wanted %+v", d, expected)

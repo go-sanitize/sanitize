@@ -7,16 +7,20 @@ import (
 	"reflect"
 )
 
-// DefaultTagName intance is the name of the tag that must be present on the string
+// DefaultTagName instance is the name of the tag that must be present on the string
 // fields of the structs to be sanitized. Defaults to "san".
 const DefaultTagName = "san"
 
-// Sanitizer intance
+type SanitizerFunc func(s Sanitizer, structValue reflect.Value, idx int) error
+
+// Sanitizer instance
 type Sanitizer struct {
 	tagName        string
 	dateInput      []string
 	dateKeepFormat bool
 	dateOutput     string
+
+	sanitizersByName map[string]SanitizerFunc
 }
 
 // New sanitizer instance
@@ -37,6 +41,16 @@ func New(options ...Option) (*Sanitizer, error) {
 			s.dateInput = v.Input
 			s.dateKeepFormat = v.KeepFormat
 			s.dateOutput = v.Output
+		case optionSanitizerFuncID:
+			if s.sanitizersByName == nil {
+				s.sanitizersByName = make(map[string]SanitizerFunc)
+			}
+
+			v := o.(OptionSanitizerFunc)
+			if _, ok := s.sanitizersByName[v.Name]; ok {
+				return nil, fmt.Errorf("sanitizer already registered with name %q", o.id())
+			}
+			s.sanitizersByName[v.Name] = o.value().(SanitizerFunc)
 		default:
 			return nil, fmt.Errorf("option %q is not valid", o.id())
 		}
@@ -160,6 +174,19 @@ func (s Sanitizer) sanitizeRec(v reflect.Value) error {
 	for i := 0; i < v.Type().NumField(); i++ {
 		field := v.Field(i)
 		fkind := field.Kind()
+
+		// Prioritize custom sanitizers; tag's value can be re-resolved inside the sanitizer
+		tags := s.fieldTags(v.Type().Field(i).Tag)
+		for tag := range tags {
+			sanitizerFunc, ok := s.sanitizersByName[tag]
+			if !ok {
+				continue
+			}
+
+			if err := sanitizerFunc(s, v, i); err != nil {
+				return err
+			}
+		}
 
 		// If the field is a slice, sanitize it first
 		isPtrToSlice := fkind == reflect.Ptr && field.Elem().Kind() == reflect.Slice
