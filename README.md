@@ -12,30 +12,40 @@ Sanitizing a struct will mutate the fields according to rules in the `san` tag. 
 `go get github.com/go-sanitize/sanitize`
 
 
-## Usage example
+## Example
 
 ```go
 package main
 
-import "github.com/go-sanitize/sanitize"
+import (
+	"fmt"
+
+	"github.com/go-sanitize/sanitize"
+)
 
 type Dog struct {
-    Name  string  `san:"max=5,trim,lower"`
-    Breed *string `san:"def=unknown"`
+	Name  string  `san:"max=5,trim,lower"`
+	Breed *string `san:"def=unknown"`
 }
 
 func main() {
-    d := Dog{
-        Name: "Borky Borkins",
-        Breed: nil,
-    }
+	dog := Dog{
+		Name:  "Borky Borkins",
+		Breed: nil,
+	}
+	fmt.Printf("Raw data -> %+v\n", dog)
 
-    s := sanitizer.New()
-    s.Sanitize(&d)
-
-    fmt.Printf("Name: %s, Breed: %s", d.Name, d.Breed)
-    // Name: borky, Breed: unknown
+	s, _ := sanitize.New()
+	s.Sanitize(&dog)
+	fmt.Printf("Sanitized data -> Name: %s, Breed: %s\n", dog.Name, *dog.Breed)
 }
+```
+
+Output:
+
+```
+Raw data -> {Name:Borky Borkins Breed:<nil>}
+Sanitized data -> Name: borky, Breed: unknown
 ```
 
 ## Available options
